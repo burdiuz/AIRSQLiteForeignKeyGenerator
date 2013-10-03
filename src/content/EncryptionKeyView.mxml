@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" xmlns:components="aw.components.*" initialize="initializeHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import aw.file.FileUtils;
+			
+			import com.adobe.air.crypto.EncryptionKeyGenerator;
+			import com.adobe.crypto.SHA1;
+			import com.adobe.crypto.SHA256;
+			
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.utils.Base64Decoder;
+			import mx.utils.Base64Encoder;
+			static private const stringEncodings:ArrayList = new ArrayList([
+				{label:"Raw String", value: "raw"}, 
+				{label:"Base64", value: "base64"}
+			]);
+			private var _file:File;
+			private var _base64Decoder:Base64Decoder = new Base64Decoder();
+			private var _bytes:ByteArray;
+			private var _encrypted:Boolean;
+			[Bindable]
+			public var enablePasswordGenerator:Boolean;
+			[Bindable]
+			public function get encrypted():Boolean{
+				return _encrypted;
+			}
+			public function set encrypted(value:Boolean):void{
+				this._encrypted = value;
+				this.validateState();
+			}
+			public function get encryptionKey():ByteArray{
+				if(this.encryptedCheckBox.selected){
+					if(this.encStringButton.selected) return this.getStringKey();
+					if(this.encFileButton.selected){
+						if(this._bytes) return this._bytes;
+						else{
+							throw new Error("Please, select Encryption Key file to load.");
+						}
+					}
+				}
+				return null;
+			}
+			private function getStringKey():ByteArray{
+				var bytes:ByteArray;
+				if(this.stringEncDropDown.selectedItem){
+					switch(this.stringEncDropDown.selectedItem.value){
+						case "raw":
+							bytes = new ByteArray();
+							bytes.writeUTFBytes(this.stringInput.text);
+							break;
+						case "base64":
+							try{
+								this._base64Decoder.decode(this.stringInput.text);
+							}catch(error:Error){
+								throw new Error("Base64 decoding error.");
+							}
+							bytes = this._base64Decoder.toByteArray();
+							break;
+					}
+				}
+				if(bytes){
+					while(bytes.length<16){
+						bytes.writeByte(0);
+					}
+					bytes.position = 0;
+					return bytes;
+				}
+				this.stringInput.setStyle("borderColor", 0xFF0000);
+				throw new Error("Please, enter Encryption Key to use.");
+				return null;
+			}
+			protected function initializeHandler(event:FlexEvent):void{
+				this._file = File.documentsDirectory;
+				this.validateState();
+			}
+			private function validateState():void{
+				this.currentState = this._encrypted ? "encrypted" : "normal";
+			}
+			private function fileSelectHandler(event:Event):void{
+				this._file.removeEventListener(Event.SELECT, this.fileSelectHandler);
+				this.filePathField.text = this._file.nativePath;
+				try{
+					this._bytes = FileUtils.read(this._file);
+				}catch(error:Error){
+					Alert.show("Can't read file, verify if you have adequate permissions to open it.", "Error reading file");
+				}
+				this._bytes = null;
+			}
+			protected function browseButton_clickHandler(event:MouseEvent):void{
+				this._file.browseForOpen("Select Encryption Key file");
+				this._file.addEventListener(Event.SELECT, this.fileSelectHandler);
+			}
+			
+			protected function generatePassword_clickHandler(event:MouseEvent):void{
+				var generator:EncryptionKeyGenerator = new EncryptionKeyGenerator();
+				do{
+					var success:Boolean;
+					var password:String = SHA256.hash((new Date()).getTime().toString()).substr(int(Math.random()*32), 32);
+					for(var index:int = 0; index<password.length; index++){
+						if(Math.random()>0.6) password = password.substr(0, index)+password.charAt(index).toUpperCase()+password.substr(index+1);
+					}
+					try{
+						var bytes:ByteArray = generator.getEncryptionKey(password);
+						success = true;
+					}catch(error:Error){
+						// generated password does not fit
+					}
+				}while(!success);
+				stringEncDropDown.selectedIndex = 1;
+				var basenc:Base64Encoder = new Base64Encoder();
+				basenc.encodeBytes(bytes);
+				stringInput.text = basenc.toString();	
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="encrypted"/>
+	</s:states>
+	<!--- @private -->
+	<s:CheckBox left="0" top="0" right="0" id="encryptedCheckBox" selected="@{encrypted}" label="Encryped Connection"/>
+	<s:Rect left="0" top="20" right="0" bottom="0" includeIn="encrypted">
+		<s:stroke>
+			<s:SolidColorStroke color="0x474747"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect left="1" top="21" right="1" bottom="1" includeIn="encrypted">
+		<s:stroke>
+			<s:SolidColorStroke color="0x141414"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup left="1" top="21" right="1" bottom="1" paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5" includeIn="encrypted">
+		<!--- @private -->
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:RadioButton id="encStringButton" label="Encrypted by String" selected="true" groupName="encType"/>
+			<s:Spacer width="100%"/>
+			<s:Button label="Generate Password" click="generatePassword_clickHandler(event)" enabled="{encStringButton.selected}" visible="{enablePasswordGenerator}"/>
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle" enabled="{encStringButton.selected}">
+			<!--- @private -->
+			<s:TextInput id="stringInput" width="100%" maxChars="{stringEncDropDown.selectedIndex ? 32 : 16}"/>
+			<!--- @private -->
+			<s:DropDownList id="stringEncDropDown" dataProvider="{stringEncodings}" selectedIndex="0"/>
+		</s:HGroup>
+		<!--- @private -->
+		<s:RadioButton id="encFileButton" label="Encrypted by Key file" groupName="encType"/>
+		<s:HGroup width="100%" verticalAlign="middle" enabled="{encFileButton.selected}">
+			<!--- @private -->
+			<components:PathText id="filePathField" width="100%"/>
+			<s:Button label="Browse" click="browseButton_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

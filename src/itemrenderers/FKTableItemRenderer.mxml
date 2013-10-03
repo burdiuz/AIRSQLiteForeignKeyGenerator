@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" clipAndEnableScrolling="true" dataChange="dataChangeHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import aw.data.FilteredArrayList;
+			import aw.data.GridColumnExtension;
+			import aw.data.ForeignKeyInfo;
+			import aw.data.SQLResources;
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayList;
+			import mx.collections.IList;
+			import mx.events.FlexEvent;
+			import mx.events.PropertyChangeEvent;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			private var _column:GridColumnExtension;
+			private var _dataField:String;
+			private var _listField:String;
+			private var _listType:Class;
+			[Bindable]
+			public var resources:SQLResources = SQLResources.instance;
+			[Bindable]
+			public var dataProvider:IList;
+			
+			override public function set column(value:GridColumn):void{
+				this._column = value as GridColumnExtension;
+				this._dataField = this._column.dataField;
+				this._listField = this._column.listField;
+				this._listType = this._column.listType;
+				BindingUtils.bindSetter(this.updateTables, this, ["resources", "tables", "length"]);
+				this.updateTables();
+				super.column = value;
+			}
+			override public function prepare(hasBeenRecycled:Boolean):void {
+				this.dataChangeHandler(null);
+				this.validateState();
+			}
+			
+			protected function dataChangeHandler(event:FlexEvent):void{
+				if(this.input){
+					this.input_creationCompleteHandler(null);
+				}
+				if(this.combo){
+					this.combo_creationCompleteHandler(null);
+				}
+			}
+			
+			protected function updateTables(anything:*=null):void{ 
+				var data:* = this.data;
+				var refDb:String = this._column.referenceDatabaseField;
+				if(refDb && data){
+					var value:String = data[refDb];
+					if(value){
+						var tables:FilteredArrayList = resources.tables;
+						this.dataProvider = tables ? tables[value] : null;
+						this.validateState();
+						return;
+					}
+				}
+				const dbs:IList = resources.databases;
+				if(dbs && dbs.length==1){
+					this.dataProvider = resources.tables;
+				}else if(!dbs || !dbs.length){
+					this.dataProvider = null;
+				}else{
+					this.dataProvider = new ArrayList(SQLResources.uniqueSortSchemas(resources.tables ? resources.tables.source : null));
+				}
+				this.validateState();
+			}
+			
+			protected function validateState():void{
+				this.currentState = this.dataProvider && this.dataProvider.length ? "db" : "nodb";
+			}
+			
+			protected function combo_creationCompleteHandler(event:FlexEvent):void{
+				var value:* = this.data;
+				if(value){
+					this.combo.selectedItem = value[this._dataField];
+				}
+			}
+			
+			protected function combo_changeHandler(event:IndexChangeEvent):void{
+				trace('change', this.combo.selectedItem);
+				var data:* = this.data;
+				if(data){
+					var value:* = this.combo.selectedItem;
+					if(value) value = value is this._listType ? value[this._listField] : String(value);
+					else value = "";
+					if(value!=data[this._dataField]){
+						data[this._dataField] = value;
+						if(this._column.referenceColumnsField) data[this._column.referenceColumnsField] = "";
+					}
+				}
+			}
+			
+			protected function input_creationCompleteHandler(event:FlexEvent):void{
+				var value:* = this.data;
+				if(value){
+					this.input.text = value[this._dataField];
+				}
+			}
+			
+			protected function input_changeHandler(event:TextOperationEvent):void{
+				var data:ForeignKeyInfo = this.data as ForeignKeyInfo;
+				if(data){
+					//data[this._dataField] = this.input.text;
+					data.setSilent(this._dataField, this.input.text);
+				}
+			}
+			
+			protected function input_focusInHandler(event:FocusEvent):void{
+				this.input.addEventListener(TextOperationEvent.CHANGE, this.input_changeHandler);
+			}
+			
+			protected function input_focusOutHandler(event:FocusEvent):void{
+				this.input.removeEventListener(TextOperationEvent.CHANGE, this.input_changeHandler);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="nodb"/>
+		<s:State name="db"/>
+	</s:states>
+	<s:TextInput id="input" left="0" top="1" right="0" focusIn="input_focusInHandler(event)" focusOut="input_focusOutHandler(event)" creationComplete="input_creationCompleteHandler(event)" includeIn="nodb" />
+	<s:ComboBox id="combo" dataProvider="{dataProvider}" labelField="name" left="0" top="1" right="0" change="combo_changeHandler(event)" creationComplete="combo_creationCompleteHandler(event)" includeIn="db" />
+</s:GridItemRenderer>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false" width="100%" dataChange="dataChangeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import aw.data.DatabaseInfo;
+			import aw.data.SQLResources;
+			import content.SQLExecuteWindow;
+			
+			import mx.events.FlexEvent;
+			[Bindable]
+			public var info:DatabaseInfo;
+			
+			protected function executeButton_clickHandler(event:MouseEvent):void{
+				if(!this.info) return;
+				SQLExecuteWindow.display(this.info);
+			}
+			protected function disconnectButton_clickHandler(event:MouseEvent):void{
+				if(!this.info) return;
+				if(this.info.main){
+					SQLResources.instance.clear();
+				}else{
+					SQLResources.instance.databases.removeItem(this.info);
+				}
+			}
+			protected function dataChangeHandler(event:FlexEvent):void{
+				this.info = this.data as DatabaseInfo;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" />
+	</s:layout>
+	<s:Image source="../icons/featured.png" toolTip="Main Database, all other attached to it" visible="{info.main}"/>
+	<s:Label text="{info.name}" width="100%" maxDisplayedLines="1" toolTip="{info.file.nativePath}" />
+	<s:Image source="../icons/query.png" buttonMode="true" useHandCursor="true" click="executeButton_clickHandler(event)" toolTip="Execute SQL code for this Database"/>
+	<s:Image source="../icons/disconnect.png" buttonMode="true" useHandCursor="true" click="disconnectButton_clickHandler(event)" enabled="{!info.main}" toolTip="Disconnect from Database"/>
+</s:ItemRenderer>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="350" height="320" title="Select columns from `{tableSchema.database}`.`{tableSchema.name}` table" initialize="initializeHandler(event)" creationComplete="creationCompleteHandler(event)" removedFromStage="removedFromStageHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import aw.data.ForeignKeyInfo;
+			import aw.data.TableColumnInfo;
+			
+			import events.ItemEvent;
+			
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			private var _names:Object = {};
+			[Bindable]
+			public var info:ForeignKeyInfo;
+			[Bindable]
+			public var tableSchema:SQLTableSchema;
+			[Bindable]
+			public var dataField:String;
+			[Bindable]
+			public var fields:ArrayList = new ArrayList();
+			static public function display(info:ForeignKeyInfo, schema:SQLTableSchema, field:String):ColumnsSelectPopUp{
+				const panel:ColumnsSelectPopUp = new ColumnsSelectPopUp();
+				panel.info = info;
+				panel.tableSchema = schema;
+				panel.dataField = field;
+				PopUpManager.addPopUp(panel, SQLiteForeignKeyGenerator.instance, true);
+				return panel;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				var list:Array;
+				var name:String;
+				var item:TableColumnInfo;
+				var selectedList:Array;
+				var columns:Object = {};
+				var column:SQLColumnSchema;
+				var selected:Object = {};
+				var string:String = this.info[this.dataField];
+				if(string){
+					selectedList = ForeignKeyInfo.columnsToList(this.info[this.dataField]);
+				}else selectedList = [];
+				list = tableSchema.columns.slice();
+				// Sort
+				if(Settings.instance.sortTableColumns){
+					list.sortOn("name", Array.CASEINSENSITIVE);
+				}
+				// Selected first
+				for each(column in list){
+					columns[column.name] = column;
+				}
+				for each(name in selectedList){
+					if(name in selected) continue;
+					selected[name] = true;
+					if(name in columns){
+						column = columns[name];
+						item = new TableColumnInfo(column);
+						item.selected = true;
+						list.splice(list.indexOf(column), 1);
+					}else{
+						item = new TableColumnInfo();
+						item.name = name;
+						item.selected = true;
+					}
+					this.fields.addItem(item);
+					this._names[item.name] = true;
+				}
+				// Not selected last ones
+				var selectedIndex:int = 0;
+				for each(column in list){
+					item = new TableColumnInfo(column);
+					this.fields.addItem(item);
+					this._names[item.name] = true;
+				}
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void{
+				if(this.stage){
+					this.stage.addEventListener(Event.RESIZE, this.resizeHandler);
+				}
+				this.resizeHandler(null);
+				this.group.addEventListener(ItemEvent.ITEM_DELETE, this.itemDeleteHandler);
+				this.group.addEventListener(ItemEvent.ITEM_MOVE_UP, this.itemMoveUpHandler);
+				this.group.addEventListener(ItemEvent.ITEM_MOVE_DOWN, this.itemMoveDownHandler);
+			}
+			
+			private function resizeHandler(event:Event):void{
+				PopUpManager.centerPopUp(this);
+			}
+			
+			protected function removedFromStageHandler(event:Event):void{
+				if(this.stage){
+					this.stage.removeEventListener(Event.RESIZE, this.resizeHandler);
+				}
+			}
+			
+			private function itemDeleteHandler(event:ItemEvent):void{
+				var item:TableColumnInfo = event.item as TableColumnInfo;
+				if(item){
+					this.fields.removeItem(item);
+					delete this._names[item.name];
+				}
+			}
+			
+			private function itemMoveUpHandler(event:ItemEvent):void{
+				var item:TableColumnInfo = event.item as TableColumnInfo;
+				if(item){
+					var index:int = this.fields.getItemIndex(item);
+					if(index>0){
+						this.fields.removeItem(item);
+						this.fields.addItemAt(item, --index);
+					}
+				}
+			}
+			
+			private function itemMoveDownHandler(event:ItemEvent):void{
+				var item:TableColumnInfo = event.item as TableColumnInfo;
+				if(item){
+					var index:int = this.fields.getItemIndex(item);
+					if(index<this.fields.length-1){
+						this.fields.removeItem(item);
+						this.fields.addItemAt(item, ++index);
+					}
+				}
+			}
+			
+			protected function closeButton_clickHandler(event:MouseEvent):void{
+				this.close();
+			}
+			public function close():void{
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function addButton_clickHandler(event:MouseEvent):void{
+				var item:TableColumnInfo = new TableColumnInfo();
+				item.name = this.customColumnInput.text;
+				item.selected = true;
+				if(item.name in this._names){
+					Alert.show("Column with same name already exists.", "Warning");
+				}else{
+					this._names[item.name] = true;
+					this.fields.addItem(item);
+					this.customColumnInput.text = "";
+				}
+			}
+			
+			protected function saveButton_clickHandler(event:MouseEvent):void{
+				const list:Array = this.fields.source;
+				const selected:Array = [];
+				for each(var item:TableColumnInfo in list){
+					if(item.selected){
+						selected.push(item.name);
+					}
+				}
+				this.info[this.dataField] = ForeignKeyInfo.columnsToString(selected);
+				this.close();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5" />
+	</s:layout>
+	<s:Group width="100%" height="100%">
+		<s:Rect left="0" top="0" right="0" bottom="0">
+			<s:stroke>
+				<s:SolidColorStroke color="0x474747"/>
+			</s:stroke>
+		</s:Rect>
+		<s:Rect left="1" top="1" right="1" bottom="1">
+			<s:stroke>
+				<s:SolidColorStroke color="0x141414"/>
+			</s:stroke>
+		</s:Rect>
+		<s:Scroller left="1" top="1" right="1" bottom="1">
+			<s:DataGroup id="group" dataProvider="{fields}" width="100%" itemRenderer="itemrenderers.TableColumnSelectItemRenderer">
+				<s:layout>
+					<s:VerticalLayout paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5" />
+				</s:layout>
+			</s:DataGroup>
+		</s:Scroller>
+	</s:Group>
+	<s:HGroup width="100%">
+		<s:TextInput id="customColumnInput" width="100%" restrict="0-9a-zA-Z_$@#-."/>
+		<s:Button label="Add Custom Column" click="addButton_clickHandler(event)" toolTip="Adds custom column name to the list" enabled="{customColumnInput.text}"/>
+	</s:HGroup>
+	<s:Label text="* Note, this will not affect actual database table and columns will not be created. Before applying output SQL to database you will be needed to define all custom columns in it." fontSize="9" width="100%" paddingBottom="20"/>
+	<s:HGroup width="100%" horizontalAlign="right">
+		<s:Button label="Save" toolTip="Save Fields selection" click="saveButton_clickHandler(event)" />
+		<s:Button label="Cancel" click="closeButton_clickHandler(event)" toolTip="Do not save Fields selection" />
+	</s:HGroup>
+</s:Panel>

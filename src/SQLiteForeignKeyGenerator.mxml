@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:local="*" minWidth="640" minHeight="400" showStatusBar="false" preinitialize="preinitializeHandler(event)" applicationComplete="applicationCompleteHandler(event)" close="closeHandler(event)" xmlns:content="content.*" xmlns:data="aw.data.*" xmlns:components="aw.components.*">
+	<fx:Style source="style.css"/>
+	<fx:Script>
+		<![CDATA[
+			import aw.data.DatabaseInfo;
+			import aw.data.ForeignKeyInfo;
+			import aw.data.NMItem;
+			import aw.data.SQLResources;
+			
+			import commands.ApplyTriggersCommand;
+			import commands.AttachDatabaseCommand;
+			import commands.ClearAllConnectionsCommand;
+			import commands.CloneConnectionsCommand;
+			import commands.CreateDatabaseCommand;
+			import commands.ExportTriggersCommand;
+			import commands.ExtendedOpenDBCommand;
+			import commands.FileCommand;
+			import commands.ICommand;
+			import commands.ICommandFactory;
+			import commands.LoadConnectionsCommand;
+			import commands.LoadForeignKeysCommand;
+			import commands.OpenDatabaseCommand;
+			import commands.SaveConnectionsCommand;
+			import commands.SaveForeignKeysCommand;
+			
+			import content.SettingsWindow;
+			
+			import events.ItemEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.events.FlexEvent;
+			
+			[Embed(source="icons/database.png")]
+			static public const DATABASE_ICON:Class;
+			[Embed(source="icons/table.png")]
+			static public const TABLE_ICON:Class;
+			[Embed(source="icons/trigger.png")]
+			static public const TRIGGER_ICON:Class;
+			static private var _instance:SQLiteForeignKeyGenerator;
+			private var _openDBCommand:ICommand;
+			static public function get instance():SQLiteForeignKeyGenerator{
+				return _instance;
+			}
+			[Bindable]
+			public var settings:Settings = Settings.instance;
+			[Bindable]
+			public var resources:SQLResources = SQLResources.instance;
+			[Bindable]
+			public var hasDatabasesConnected:Boolean;
+			public var exportTriggersCommand:ICommandFactory;
+			public var applyTriggersCommand:ICommandFactory;
+			[Bindable]
+			public var list:ArrayList = new ArrayList([]);
+			protected function preinitializeHandler(event:FlexEvent):void{
+				_instance = this;
+				this.buildMenu();
+				BindingUtils.bindSetter(this.databaseCountChangedHandler, this, ["resources", "databases", "length"]);
+			}
+			private function buildMenu():void{
+				const menu:NativeMenu = new NativeMenu();
+				const dbs:NativeMenu = new NativeMenu();
+				this._openDBCommand = new OpenDatabaseCommand(this.openDatabaseHandler);
+				dbs.addItem(new NMItem("Open Database", this._openDBCommand, "o", null, this, ["hasDatabasesConnected"], true));
+				dbs.addItem(new NMItem("Create Database", new CreateDatabaseCommand(this.createDatabaseHandler), "n", null, this, ["hasDatabasesConnected"], true));
+				dbs.addItem(new NMItem("Attach Database", new AttachDatabaseCommand(), "o", null, this, ["hasDatabasesConnected"]));
+				dbs.addItem(new NMItem("Refresh", function(event:Event):void{
+					this.resources.refresh();
+				}, "r", null, this, ["hasDatabasesConnected"]));
+				dbs.addItem(new NativeMenuItem("", true));
+				dbs.addItem(new NMItem("Open Database with...", new ExtendedOpenDBCommand(false, this.openDatabaseHandler), "O", null, this, ["hasDatabasesConnected"], true));
+				dbs.addItem(new NMItem("Create Database with...", new ExtendedOpenDBCommand(true, this.createDatabaseHandler), "N", null, this, ["hasDatabasesConnected"], true));
+				dbs.addItem(new NativeMenuItem("", true));
+				dbs.addItem(new NMItem("Close All Databases", new ClearAllConnectionsCommand(), "C", null, this, ["hasDatabasesConnected"]));
+				menu.addSubmenu(dbs, "Database");
+				const conns:NativeMenu = new NativeMenu();
+				conns.addItem(new NMItem("Load Connections", new LoadConnectionsCommand(), "", null, this, ["hasDatabasesConnected"], true));
+				conns.addItem(new NMItem("Save Connections", new SaveConnectionsCommand(), "", null, this, ["hasDatabasesConnected"]));
+				conns.addItem(new NMItem("Clone Connections", new CloneConnectionsCommand(), "", null, this, ["hasDatabasesConnected"]));
+				conns.addItem(new NMItem("Clone Connections To Temp", new CloneConnectionsCommand(true), "", null, this, ["hasDatabasesConnected"]));
+				menu.addSubmenu(conns, "Connections");
+				const fk:NativeMenu = new NativeMenu();
+				fk.addItem(new NMItem("Add Foreign Key", this.addForeignKeyHandler, "a"));
+				fk.addItem(new NMItem("Load Foreign Keys", new LoadForeignKeysCommand(this), "l"));
+				fk.addItem(new NMItem("Save Foreign Keys", new SaveForeignKeysCommand(this), "s", null, this, ["list", "length"]));
+				fk.addItem(new NativeMenuItem("", true));
+				exportTriggersCommand = new ExportTriggersCommand();
+				fk.addItem(new NMItem("Export as...", exportTriggersCommand, "e", null, this, ["list", "length"]));
+				applyTriggersCommand = new ApplyTriggersCommand();
+				fk.addItem(new NMItem("Apply to Connections", applyTriggersCommand, "", null, this, ["list", "length"]));
+				menu.addSubmenu(fk, "Foreign Key");
+				menu.addItem(new NMItem("Settings", function(event:Event):void{
+					SettingsWindow.display();
+				}));
+				this.nativeWindow.menu = menu;
+			}
+			private function databaseCountChangedHandler(value:int):void{
+				this.hasDatabasesConnected = value>0;
+				this.currentState = value>0 ? "db" : "nodb";
+			}
+			protected function applicationCompleteHandler(event:FlexEvent):void{
+				this.grid.addEventListener(ItemEvent.ITEM_DELETE, this.gridItemDeleteHandler);
+				this.list.addItem(new ForeignKeyInfo());
+			}
+			private function openDatabaseHandler(event:Event):void{
+				const command:FileCommand = event.target as FileCommand;
+				if(!command.errorOccured){
+					this.fileField.text = "";
+				}else{
+					this.fileField.text = command.file.nativePath;
+				}
+			}
+			private function createDatabaseHandler(event:Event):void{
+				if(this.resources.databases.length==1){
+					this.openDatabaseHandler(event);
+				}
+			}
+			protected function addForeignKeyHandler(event:Event):void{
+				this.list.addItem(new ForeignKeyInfo());
+			}
+			protected function closeHandler(event:Event):void{
+				Settings.write();
+				this.nativeApplication.exit();
+			}
+			protected function cloneConnectionsHandler(event:Event):void{
+				
+			}
+			private function gridItemDeleteHandler(event:ItemEvent):void{
+				this.list.removeItem(event.item);
+			}
+			
+			protected function applyTriggers_clickHandler(event:MouseEvent):void{
+				applyTriggersCommand.getInstance().execute();
+			}
+			
+			protected function exportTriggers_clickHandler(event:MouseEvent):void{
+				exportTriggersCommand.getInstance().execute();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="nodb"/>
+		<s:State name="db"/>
+	</s:states>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5"/>
+	</s:layout>
+	<s:HGroup width="100%" verticalAlign="middle">
+		<s:Label text="SQLite Database file:"/>
+		<components:PathText id="fileField" width="100%" editable="false" prompt="Select SQLite Database file..."/>
+		<s:Button label="Browse" click="_openDBCommand.execute();" toolTip="Browse to open main Database file" enabled.db="false"/>
+	</s:HGroup>
+	<mx:DividedBox width="100%" height="100%" direction="horizontal">
+		<mx:Accordion width="200" minWidth="150" height="100%" includeIn="db">
+			<content:DBEntitiesContent id="tablesContainer" list="{resources.tables}" label="Tables" icon="{TABLE_ICON}" itemRenderer="itemrenderers.TableItemRenderer" showDatabaseName="@{settings.tablesShowDBName}" />
+			<content:DBEntitiesContent id="triggersContainer" list="{resources.triggers}" label="Triggers" icon="{TRIGGER_ICON}" itemRenderer="itemrenderers.TriggerItemRenderer" showDatabaseName="@{settings.triggersShowDBName}" />
+			<content:DBEntitiesContent id="databasesContainer" list="{resources.databases}" label="Databases" icon="{DATABASE_ICON}" itemRenderer="itemrenderers.DatabaseItemRenderer" enableDatabaseName="false" />
+		</mx:Accordion>
+		<s:VGroup width="100%" minWidth="400" height="100%">
+			<s:DataGrid id="grid" dataProvider="{list}" editable="true" width="100%" height="100%">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn dataField="name" itemRenderer="itemrenderers.FKNameItemRenderer" headerText="Name" width="100" rendererIsEditable="true" editable="true" />
+						<data:GridColumnExtension dataField="database" listField="name" listType="{DatabaseInfo}" referenceTableField="table" referenceColumnsField="columns" itemRenderer="itemrenderers.FKDatabaseItemRenderer" headerText="Database" truncatedHeaderText="DB" headerRenderer="itemrenderers.DataGridHeaderRenderer" visible="{settings.displayDatabaseFields || (resources.databases &amp;&amp; resources.databases.length &gt; 1)}" />
+						<data:GridColumnExtension dataField="table" listField="name" listType="{SQLTableSchema}" referenceDatabaseField="database"  referenceColumnsField="columns" itemRenderer="itemrenderers.FKTableItemRenderer" headerText="Table" />
+						<data:GridColumnExtension dataField="columns" referenceDatabaseField="database" referenceTableField="table" itemRenderer="itemrenderers.FKColumnItemRenderer" headerText="Field Names" truncatedHeaderText="Fields" headerRenderer="itemrenderers.DataGridHeaderRenderer" />
+						<data:GridColumnExtension dataField="referenceDatabase" listField="name" listType="{DatabaseInfo}" referenceTableField="referenceTable" referenceColumnsField="referenceColumns" itemRenderer="itemrenderers.FKDatabaseItemRenderer" headerText="Reference Database" truncatedHeaderText="Ref. DB" headerRenderer="itemrenderers.DataGridHeaderRenderer" visible="{settings.displayDatabaseFields || (resources.databases &amp;&amp; resources.databases.length &gt; 1)}" />
+						<data:GridColumnExtension dataField="referenceTable" listField="name" listType="{SQLTableSchema}" referenceDatabaseField="referenceDatabase" referenceColumnsField="referenceColumns" itemRenderer="itemrenderers.FKTableItemRenderer" headerText="Reference Table" truncatedHeaderText="R. Table" headerRenderer="itemrenderers.DataGridHeaderRenderer" />
+						<data:GridColumnExtension dataField="referenceColumns" referenceDatabaseField="referenceDatabase" referenceTableField="referenceTable" itemRenderer="itemrenderers.FKColumnItemRenderer" headerText="Refence Field Names" truncatedHeaderText="R. Fields" headerRenderer="itemrenderers.DataGridHeaderRenderer" />
+						<s:GridColumn dataField="onDelete" itemRenderer="itemrenderers.FKActionItemRenderer" headerText="On Delete" width="105" minWidth="50" maxWidth="105" editable="false" />
+						<s:GridColumn dataField="onUpdate" itemRenderer="itemrenderers.FKActionItemRenderer" headerText="On Update" width="105" minWidth="50" maxWidth="105" editable="false" />
+						<s:GridColumn itemRenderer="itemrenderers.ItemDeleteItemRenderer" headerText="" width="20" minWidth="20" maxWidth="20" editable="false" />
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:CheckBox label="Display Database columns" selected="@{settings.displayDatabaseFields}" />
+				<s:Spacer width="100%" />
+				<s:Button label="Add Foreign Key" icon="@Embed('icons/add.png')" click="addForeignKeyHandler(event)" skinClass="skins.IconButton"/>
+				<s:Button label="Apply" enabled.nodb="false" click="applyTriggers_clickHandler(event)" />
+				<s:Button label="Export" click="exportTriggers_clickHandler(event)" enabled="{list.length}"/>
+			</s:HGroup>
+		</s:VGroup>
+	</mx:DividedBox>
+	<!--
+	1. должны быть опции execute/update, чтоб применить тригеры прямо в выбранную базу данных. если БД не выбрана, то отобразить диалог поиска файла.
+	2. опции экспорта включают простой текст, массив выражений, XML, класс. опции сохранения в класс включают простое сохранение файл и указание рутовой папки в которй будет создан путь пакета и там уже сохранён класс.
+	+3. подключение нескольких БД и возможность сохранить настройку подключения - - имя БД и путь к файлу, чтоб потом можно было зарузиь этот файл и восстановить все соединения.
+	+4. сохранение Foreign Keys настроек с возможностью загрузки -и резолвинга имён при совпадении(резолвить имена буду на выходе)
+	+5. клонирование соединения с копированием файлов баз данных
+	+6. Слишком длинные надписи на кнопках, добавить иконки.
+	7. добавить поддержку encrypted БД
+	-->
+</s:WindowedApplication>
+<!--
+var db:File = File.documentsDirectory.resolvePath("privdb.db");
+const conn:SQLConnection = new SQLConnection();
+const key:ByteArray = new ByteArray();
+key.writeUTFBytes("protected connec");
+conn.open(db, SQLMode.CREATE, false, 1024, key);
+var exec:SQLStatement = new SQLStatement();
+const sql:XML = <root>
+					CREATE TABLE `smltbl` (
+					`id` INT PRIMARY KEY AUTOINCREMENT,
+					`value` TEXT NOT NULL
+					); 
+					CREATE TABLE `whtdym` (
+					`id` INT PRIMARY KEY AUTOINCREMENT,
+					`value` TEXT NOT NULL
+					);
+					CREATE TABLE `keys` (
+					`id` INT PRIMARY KEY AUTOINCREMENT,
+					`value` TEXT NOT NULL
+					);
+					CREATE TABLE `clock` (
+					`id` INT PRIMARY KEY AUTOINCREMENT,
+					`url_id` INT NOT NULL,
+					`start_date` INT NOT NULL 
+					);
+					CREATE TABLE `tiger` (
+					`id` INT PRIMARY KEY AUTOINCREMENT,
+					`url_id` INT NOT NULL,
+					`session_id` INT NOT NULL,
+					`value` INT DEFAULT 0,
+					`min_time` INT NOT NULL,
+					`average_time` INT NOT NULL,
+					`max_time` INT NOT NULL,
+					`start_date` INT NOT NULL,
+					`end_date` INT NOT NULL 
+					);
+					CREATE TABLE `bluescreen` (
+					`id` INT PRIMARY KEY AUTOINCREMENT,
+					`url_id` INT NOT NULL,
+					`session_id` INT NOT NULL,
+					`value` INT DEFAULT 0,
+					`min_time` INT NOT NULL,
+					`average_time` INT NOT NULL,
+					`max_time` INT NOT NULL,
+					`start_date` INT NOT NULL,
+					`end_date` INT NOT NULL 
+					);
+					CREATE INDEX `clock_url_id` ON `second` (`url_id`);
+					CREATE INDEX `tiger_url_id` ON `big_tbl` (`url_id`);
+				CREATE INDEX `bluescreen_id` ON `big_tbl` (`session_id`);</root>;
+exec.text = sql.toString();
+exec.sqlConnection = conn;
+exec.execute();
+-->

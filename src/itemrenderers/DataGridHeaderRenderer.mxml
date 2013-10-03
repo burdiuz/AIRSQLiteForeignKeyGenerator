@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ks:DefaultGridHeaderRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								xmlns:s="library://ns.adobe.com/flex/spark" xmlns:ks="com.kingnare.skin.spark.DataGrid.*" preinitialize="preinitializeHandler(event)" initialize="initializeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import aw.data.GridColumnExtension;
+			import mx.events.FlexEvent;
+			
+			import spark.components.Label;
+			import spark.components.supportClasses.TextBase;
+			
+			private var _width:int;
+			private var _labelDisplay:TextBase;
+			
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				this._width = unscaledWidth;
+				this.updateDisplayedLabel();
+			}
+			private var _maxTruncatedWidth:int;
+			private function updateDisplayedLabel():void{
+				const column:GridColumnExtension = this.column as GridColumnExtension;
+				if(!column) return;
+				if(this._labelDisplay.isTruncated){
+					this._maxTruncatedWidth = Math.max(this._maxTruncatedWidth, this._width);
+					this.setLabel(column.truncatedHeaderText, column.headerText);
+				}else if(this._maxTruncatedWidth<this._width){
+					this.setLabel(column.headerText, "");
+				}
+			}
+			public function setLabel(label:String, tip:String):void{
+				this._labelDisplay.text = label;
+				this.toolTip =  this._labelDisplay.toolTip = tip;
+			}
+			protected function preinitializeHandler(event:FlexEvent):void{
+				this._labelDisplay = this.labelDisplay;
+				this.labelDisplay = null;
+			}
+			static private const field:TextField = new TextField();
+			protected function initializeHandler(event:FlexEvent):void{
+				this.labelDisplayGroup.removeAllElements();
+				this.labelDisplayGroup.addElement(this._labelDisplay);
+				field.text = "";
+				field.defaultTextFormat = new TextFormat(this._labelDisplay.getStyle("fontFamily"), this._labelDisplay.getStyle("fontSize"), null, this._labelDisplay.getStyle("fontWeight")=="bold");
+				field.text = this.label;
+				this._maxTruncatedWidth = field.textWidth+5;
+			}
+		]]>
+	</fx:Script>
+</ks:DefaultGridHeaderRenderer>

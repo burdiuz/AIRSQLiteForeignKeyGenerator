@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" clipAndEnableScrolling="true" xmlns:local="*" xmlns:components="aw.components.*">
+	<fx:Script>
+		<![CDATA[
+			override public function prepare(hasBeenRecycled:Boolean):void {
+				const file:File = this.data[this.column.dataField];
+				this.pathDisplay.text = file ? file.nativePath : "Database file was not set...";
+				this.validate();
+			}
+			private var _file:File;
+			protected function browseButton_clickHandler(event:MouseEvent):void{
+				this._file = File.userDirectory;
+				this._file.addEventListener(Event.SELECT, this.fileSelectHandler);
+				this._file..browseForOpen("Select Database file", Settings.instance.getFileFilters());
+			}
+			private function fileSelectHandler(event:Event):void{
+				this._file.removeEventListener(Event.SELECT, this.fileSelectHandler);
+				if(this.data) this.data[this.column.dataField] = this._file;
+				this._file = null;
+			}
+			protected function validate():void{
+				const file:File = data ? data[column.dataField] : null;
+				if(!file || !file.exists || file.isDirectory || file.isPackage){
+					this.alertFill.visible = true;
+					//this.browseButton.visible = true;
+				}else{
+					//this.browseButton.visible = false;
+					this.alertFill.visible = false;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Rect id="alertFill" left="0" top="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#663333"/>
+		</s:fill>
+	</s:Rect>
+	<components:PathText id="pathDisplay" left="0" top="0" right="22"/>
+	<s:Button id="browseButton" label="..." width="22" top="0" right="0" click="browseButton_clickHandler(event)"/>
+</s:GridItemRenderer>

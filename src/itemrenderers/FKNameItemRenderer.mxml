@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" clipAndEnableScrolling="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import aw.data.ForeignKeyInfo;
+			import spark.events.TextOperationEvent;
+			override public function prepare(hasBeenRecycled:Boolean):void {
+				lblData.text = data ? data[column.dataField] : "";
+			}
+			
+			protected function lblData_changeHandler(event:TextOperationEvent):void{
+				var data:ForeignKeyInfo = this.data as ForeignKeyInfo;
+				if(data){
+					//data[column.dataField] = this.lblData.text;
+					data.setSilent(column.dataField, this.lblData.text);
+				}
+			}
+			
+			protected function lblData_focusInHandler(event:FocusEvent):void{
+				this.lblData.addEventListener(TextOperationEvent.CHANGE, this.lblData_changeHandler);
+			}
+			
+			protected function lblData_focusOutHandler(event:FocusEvent):void{
+				this.lblData.removeEventListener(TextOperationEvent.CHANGE, this.lblData_changeHandler);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:TextInput id="lblData" left="0" top="1" right="0" focusIn="lblData_focusInHandler(event)" focusOut="lblData_focusOutHandler(event)"/>
+</s:GridItemRenderer>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false" width="100%" dataChange="dataChangeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import aw.data.FilteredArrayList;
+			import aw.data.SQLResources;
+			import content.SQLPreviewWindow;
+			
+			import events.ItemEvent;
+			
+			import mx.collections.ArrayList;
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.core.IVisualElementContainer;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			[Bindable]
+			public var settings:Settings = Settings.instance;
+			[Bindable]
+			public var schema:SQLTriggerSchema;
+			
+			protected function showButton_clickHandler(event:MouseEvent):void{
+				SQLPreviewWindow.display(this.schema);
+			}
+			
+			protected function deleteButton_clickHandler(event:MouseEvent):void{
+				if(!this.schema) return;
+				Alert.show("Are you sure, you want to remove trigger \""+this.schema.name+"\"?\nThis action cannot be reverted.", "Deleting trigger", Alert.YES|Alert.NO, null, this.deleteAlertCloseHandler);
+			}
+			private function deleteAlertCloseHandler(event:CloseEvent):void{
+				if(event.detail==Alert.YES){
+					var connection:SQLConnection = SQLResources.instance.connection;
+					if(connection){
+						const statement:SQLStatement = new SQLStatement();
+						statement.sqlConnection = connection;
+						statement.text = "DROP TRIGGER IF EXISTS `"+this.schema.name+"`;";
+					}
+					const list:FilteredArrayList = SQLResources.instance.triggers;
+					if(list){
+						list.removeItem(this.schema);
+					}
+				}
+			}
+			
+			protected function dataChangeHandler(event:FlexEvent):void{
+				this.schema = this.data as SQLTriggerSchema;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" />
+	</s:layout>
+	<s:Label text="{settings.triggersShowDBName ? schema.database+'.'+schema.name : schema.name}" width="100%" maxDisplayedLines="1" />
+	<s:Image source="../icons/text.png" buttonMode="true" useHandCursor="true" click="showButton_clickHandler(event)" toolTip="Display SQL code"/>
+	<s:Image source="../icons/delete.png" buttonMode="true" useHandCursor="true" click="deleteButton_clickHandler(event)" toolTip="Remove Trigger from Database"/>
+</s:ItemRenderer>

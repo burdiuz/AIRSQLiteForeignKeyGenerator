@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="550" height="300" title="Settings" alwaysInFront="true" showStatusBar="false" type="{NativeWindowType.UTILITY}" backgroundColor="#333333" close="closeHandler(event)" xmlns:content="content.*">
+	<fx:Script>
+		<![CDATA[
+			static private var _instance:SettingsWindow;
+			[Bindable]
+			public var settings:Settings = Settings.instance;
+			static public function display():SettingsWindow{
+				if(_instance) _instance.activate();
+				else{
+					_instance = new SettingsWindow();
+					_instance.open();
+				}
+				return _instance;
+			}
+			
+			protected function closeHandler(event:Event):void{
+				_instance = null;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<fx:int id="labelWidth">200</fx:int>
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5" />
+	</s:layout>
+	<s:Group width="100%" height="100%">
+		<s:Rect left="0" top="0" right="0" bottom="0">
+			<s:stroke>
+				<s:SolidColorStroke color="0x474747"/>
+			</s:stroke>
+		</s:Rect>
+		<s:Rect left="1" top="1" right="1" bottom="1">
+			<s:stroke>
+				<s:SolidColorStroke color="0x141414"/>
+			</s:stroke>
+		</s:Rect>
+		<s:Scroller left="1" top="1" right="1" bottom="1">
+			<s:VGroup width="100%" paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5">
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Additional SQLite file extensions:" textAlign="right" width="{labelWidth}"/>
+					<s:TextInput width="100%"/>
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Export package:" textAlign="right" width="{labelWidth}"/>
+					<s:TextInput text="@{settings.exportClassPackageName}" width="100%"/>
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Export class name template:" textAlign="right" width="{labelWidth}"/>
+					<s:TextInput text="@{settings.exportClassNameTemplate}" width="100%"/>
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Trigger name template:" textAlign="right" width="{labelWidth}"/>
+					<s:TextInput text="@{settings.triggerNameScheme}" width="100%"/>
+				</s:HGroup>
+				<s:Label fontSize="9" width="100%" paddingLeft="{labelWidth}">
+					<s:text><fx:String><![CDATA[* Note, with trigger name template you can use markers that will be replaced by dynamic values.
+$name - Name of the trigger
+$action - Action checked by current trigger.
+$table - Target table name.
+$cols - Target column names.
+$rTable - Reference table name.
+$rCols - Reference collumn names.]]></fx:String></s:text>
+				</s:Label>
+				<s:Spacer height="25" />
+				<s:Label text="RESTRICTed error messages"/>
+				<s:Label text="On UPDATE row error message template"/>
+				<s:TextInput text="@{settings.onUpdateRestrictedErrorMessage}" width="100%"/>
+				<s:Label text="On DELETE row Error message template"/>
+				<s:TextInput text="@{settings.onDeleteRestrictedErrorMessage}" width="100%"/>
+				<s:Label fontSize="9" width="100%">
+					<s:text><fx:String><![CDATA[* Note, with error messages you can use markers that will be replaced by dynamic values. 
+$table - current table name. 
+$fkey - current foreign key.]]></fx:String></s:text>
+				</s:Label>
+				<s:Spacer height="25" />
+				<s:Label text="Constraint violation error messages"/>
+				<s:Label text="On INSERT row error message template"/>
+				<s:TextInput text="@{settings.onInsertErrorMessage}" width="100%"/>
+				<s:Label text="On UPDATE row error message template"/>
+				<s:TextInput text="@{settings.onUpdateErrorMessage}" width="100%"/>
+				<s:Label text="On DELETE row Error message template"/>
+				<s:TextInput text="@{settings.onDeleteErrorMessage}" width="100%"/>
+				<s:Spacer height="25" />
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Default export method:" textAlign="right" width="{labelWidth}"/>
+					<s:DropDownList width="100%"/>
+				</s:HGroup>
+				<s:Spacer height="25" />
+				<s:CheckBox selected="@{settings.tablesShowDBName}" label="Display Database name with tables"/>
+				<s:CheckBox selected="@{settings.triggersShowDBName}" label="Display Database name with triggers"/>
+				<s:CheckBox selected="@{settings.sortTableColumns}" label="Display table columns alphabetically sorted"/>
+				<s:CheckBox selected="@{settings.displayDatabaseFields}" label="Always display Database column"/>
+				<s:CheckBox selected="@{settings.saveConnectionsOnExit}" label="Save databases connection on exit"/>
+			</s:VGroup>
+		</s:Scroller>
+	</s:Group>
+	<s:HGroup width="100%" horizontalAlign="right">
+		<s:Button label="Close" click="close()"/>
+	</s:HGroup>
+</s:Window>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false" width="100%" dataChange="dataChangeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import aw.data.TableColumnInfo;
+			
+			import events.ItemEvent;
+			
+			import mx.events.FlexEvent;
+			
+			protected function dataChangeHandler(event:FlexEvent):void{
+				var data:TableColumnInfo = this.data as TableColumnInfo;
+				if(!data) return;
+				if(data.isExists()){
+					this.toolTip = TableColumnInfo.toString(data.schema);
+					this.currentState = "native";
+				}else{
+					this.toolTip = "";
+					this.currentState = "custom";
+				}
+			}
+			
+			protected function clickHandler(event:MouseEvent):void{
+				this.owner.dispatchEvent(new ItemEvent(ItemEvent.ITEM_DELETE, false, false, this.data));
+			}
+			
+			protected function clickUpHandler(event:MouseEvent):void{
+				this.owner.dispatchEvent(new ItemEvent(ItemEvent.ITEM_MOVE_UP, false, false, this.data));
+			}
+			
+			protected function clickDownHandler(event:MouseEvent):void{
+				this.owner.dispatchEvent(new ItemEvent(ItemEvent.ITEM_MOVE_DOWN, false, false, this.data));
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="native"/>
+		<s:State name="custom"/>
+	</s:states>
+	<s:Image source="../icons/down.png" top="0" left="0" buttonMode="true" useHandCursor="true" click="clickDownHandler(event)" toolTip="Move Column Down" />
+	<s:Image source="../icons/up.png" top="0" left="17" buttonMode="true" useHandCursor="true" click="clickUpHandler(event)" toolTip="Move Column Up" />
+	<s:CheckBox selected="@{data.selected}" left="34" top="3"/>
+	<s:Label text="{data.name}" left="56" top="3" right="20" maxDisplayedLines="1"/>
+	<s:Image source="../icons/delete.png" top="0" right="0" buttonMode="true" useHandCursor="true" click="clickHandler(event)" toolTip="Remove Custom Column" includeIn="custom" />
+</s:ItemRenderer>

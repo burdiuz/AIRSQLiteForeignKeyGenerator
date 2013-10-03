@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" clipAndEnableScrolling="true" preinitialize="preinitializeHandler(event)" dataChange="dataChangeHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import aw.data.GridColumnExtension;
+			import aw.data.ForeignKeyInfo;
+			import aw.data.SQLResources;
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.IList;
+			import mx.events.FlexEvent;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			private var _column:GridColumnExtension;
+			private var _dataField:String;
+			private var _listField:String;
+			private var _listType:Class;
+			[Bindable]
+			public var resources:SQLResources = SQLResources.instance;
+			
+			override public function set column(value:GridColumn):void{
+				this._column = value as GridColumnExtension;
+				this._dataField = this._column.dataField;
+				this._listField = this._column.listField;
+				this._listType = this._column.listType;
+				super.column = value;
+			}
+			
+			override public function prepare(hasBeenRecycled:Boolean):void {
+				this.dataChangeHandler(null);
+				const dbs:IList = this.resources.databases;
+				this.changeStateHandler(dbs ? dbs.length : 0);
+			}
+			
+			protected function dataChangeHandler(event:FlexEvent):void{
+				if(this.combo){
+					this.combo_creationCompleteHandler(null);
+				}
+				if(this.input){
+					this.input_creationCompleteHandler(null);
+				}
+			}
+			
+			protected function preinitializeHandler(event:FlexEvent):void{
+				BindingUtils.bindSetter(this.changeStateHandler, this, ["resources", "databases", "length"]);
+			}
+			private function changeStateHandler(value:int):void{
+				this.currentState = value>0 ? "db" : "nodb";
+			}
+			
+			protected function combo_creationCompleteHandler(event:FlexEvent):void{
+				var data:* = this.data;
+				if(data){
+					this.combo.selectedItem = data[this._dataField];
+				}
+			}
+			
+			protected function combo_changeHandler(event:IndexChangeEvent):void{
+				var data:* = this.data;
+				if(data){
+					var value:* = this.combo.selectedItem;
+					if(value) value = value is this._listType ? value[this._listField] : String(value);
+					else value = "";
+					if(value!=data[this._dataField]){
+						data[this._dataField] = value;
+						if(this._column.referenceTableField) data[this._column.referenceTableField] = "";
+						if(this._column.referenceColumnsField) data[this._column.referenceColumnsField] = "";
+					}
+				}
+			}
+			
+			protected function input_creationCompleteHandler(event:FlexEvent):void{
+				var data:* = this.data;
+				if(data){
+					this.input.text = data[this._dataField];
+				}
+			}
+			
+			protected function input_focusInHandler(event:FocusEvent):void{
+				this.input.addEventListener(TextOperationEvent.CHANGE, this.input_changeHandler);
+			}
+			
+			protected function input_focusOutHandler(event:FocusEvent):void{
+				this.input.removeEventListener(TextOperationEvent.CHANGE, this.input_changeHandler);
+			}
+			
+			protected function input_changeHandler(event:TextOperationEvent):void{
+				var data:ForeignKeyInfo = this.data as ForeignKeyInfo;
+				if(data){
+					//data[this._dataField] = this.input.text;
+					data.setSilent(this._dataField, this.input.text);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="nodb"/>
+		<s:State name="db"/>
+	</s:states>
+	<s:TextInput id="input" left="0" top="1" right="0" creationComplete="input_creationCompleteHandler(event)" focusIn="input_focusInHandler(event)" focusOut="input_focusOutHandler(event)" includeIn="nodb"/>
+	<s:ComboBox id="combo" dataProvider="{resources.databases}" labelField="name" left="0" top="1" right="0" change="combo_changeHandler(event)" creationComplete="combo_creationCompleteHandler(event)" includeIn="db"/>
+</s:GridItemRenderer>

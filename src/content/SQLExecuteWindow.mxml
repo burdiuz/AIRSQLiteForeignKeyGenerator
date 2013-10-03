@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="550" minWidth="450" height="400" title="Execute SQL for &quot;{database.name}&quot; database" showStatusBar="false" backgroundColor="#333333" initialize="initializeHandler(event)" close="closeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import avmplus.getQualifiedClassName;
+			
+			import aw.data.DatabaseInfo;
+			import aw.data.SQLResources;
+			import aw.data.SQLResultLog;
+			
+			import flash.utils.getTimer;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			static private const _instances:Dictionary = new Dictionary(true);
+			
+			private var _database:DatabaseInfo;
+
+			[Bindable]
+			public function get database():DatabaseInfo{
+				return this._database;
+			}
+
+			public function set database(value:DatabaseInfo):void{
+				delete _instances[this._database];
+				this._database = value;
+				_instances[this._database] = this;
+			}
+
+			static public function display(database:DatabaseInfo):SQLExecuteWindow{
+				var window:SQLExecuteWindow;
+				if(database in _instances){
+					window = _instances[database];
+					window.activate();
+				}else{
+					window = new SQLExecuteWindow();
+					window.database = database;
+					window.open();
+				}
+				return window;
+			}
+			
+			protected function closeButton_clickHandler(event:MouseEvent):void{
+				this.close();
+				/*NOTE why i needed this?
+				var l:Loader = new Loader();
+				l.contentLoaderInfo.bytes
+				*/
+			}
+			
+			protected function executeButton_clickHandler(event:MouseEvent):void{
+				var connection:SQLConnection;
+				var temp:Boolean = false;
+				if(this.ownConnectionCheckbox.selected){
+					connection = new SQLConnection();
+					try{
+						connection.open(this._database.file, SQLMode.UPDATE, this._database.autoCompact, this._database.pageSize, this._database.encryptionKey);
+						temp = true;
+					}catch(error:Error){
+						Alert.show("Unexpected error, cannot connect to database file.", "Error");
+						return;
+					}
+				}else{
+					connection = SQLResources.instance.connection;
+				}
+				const statement:SQLStatement = new SQLStatement();
+				statement.sqlConnection = connection;
+				statement.text = sqlText.text;
+				const useTransaction:Boolean = this.wrapTransactionCheckbox.selected;
+				this.logText.text = "";
+				var time:Number = 0;
+				try{
+					if(useTransaction) connection.begin();
+					time = getTimer();
+					statement.execute();
+					time = getTimer()-time;
+					if(useTransaction) connection.commit(); 
+				}catch(error:Error){
+					time = getTimer()-time;
+					this.logText.text = error.toString();
+				}
+				const result:SQLResult = statement.getResult();
+				if(result){
+					SQLResultLog.show(result, this.appendLogHandler);
+					this.logText.appendText("\nSQL instructions executed, "+result.rowsAffected+" rows affected.\nTime: "+(uint(time) ? uint(time)/1000 : "0.000")+"ms");
+				}
+				if(temp) connection.close();
+			}
+			
+			protected function closeHandler(event:Event):void{
+				delete _instances[this._database];
+			}
+			
+			protected function appendLogHandler(row:String):void{
+				this.logText.appendText(row+"\n");
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				//this.sqlText.text = "SELECT * FROM `"+this._database.name+"`;";
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5" horizontalAlign="right" />
+	</s:layout>
+	<mx:DividedBox width="100%" height="100%">
+		<s:VGroup width="100%" height="100%" horizontalAlign="right">
+			<s:TextArea id="sqlText" width="100%" height="100%" editable="true" horizontalScrollPolicy="auto"/>
+			<s:HGroup width="100%" verticalAlign="bottom">
+				<s:VGroup width="100%" height="100%" verticalAlign="bottom">
+					<s:CheckBox id="executeAsMultiCheckbox" label="Execute as multi-query" selected="true" toolTip="This is required in you want to execute more than one query at a time."/>
+					<s:CheckBox id="wrapTransactionCheckbox" label="Wrap SQL code into TRANSACTION container" selected="true" enabled="{executeAsMultiCheckbox.selected}" width="100%"/>
+				</s:VGroup>
+				<s:VGroup height="100%" horizontalAlign="right" verticalAlign="bottom">
+					<s:CheckBox id="ownConnectionCheckbox" label="Only for &quot;{database.name}&quot; database" selected="true" toolTip="Will create separate connection for selected database." skinClass="skins.RTLCheckBox"/>
+					<s:Button label="Execute" click="executeButton_clickHandler(event)" enabled="{Boolean(sqlText.text)}"/>
+				</s:VGroup>
+			</s:HGroup>
+		</s:VGroup>
+		<s:TextArea id="logText" width="100%" height="50" editable="false" horizontalScrollPolicy="off"/>
+	</mx:DividedBox>
+	<s:HGroup width="100%" verticalAlign="middle">
+		<s:Spacer width="100%"/>
+		<s:Button label="Close" click="closeButton_clickHandler(event)"/>
+	</s:HGroup>
+</s:Window>

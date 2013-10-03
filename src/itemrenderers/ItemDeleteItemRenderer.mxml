@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" clipAndEnableScrolling="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import events.ItemEvent;
+			override public function prepare(hasBeenRecycled:Boolean):void {
+				//lblData.text = data[column.dataField]
+			}
+			
+			protected function clickHandler(event:MouseEvent):void{
+				this.owner.dispatchEvent(new ItemEvent(ItemEvent.ITEM_DELETE, false, false, this.data));
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Image source="../icons/delete.png" top="5" left="3" buttonMode="true" useHandCursor="true" click="clickHandler(event)" toolTip="Remove Item" />
+</s:GridItemRenderer>

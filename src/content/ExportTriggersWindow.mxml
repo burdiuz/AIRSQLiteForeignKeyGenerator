@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="550" minWidth="450" height="400" title="Export Foreign Key triggers" showStatusBar="false" backgroundColor="#333333" initialize="initializeHandler(event)" close="closeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import aw.data.SQLResources;
+			
+			import aw.data.export.SQLiteExport;
+			
+			import mx.events.FlexEvent;
+			static private var _instance:ExportTriggersWindow;
+			static public function display():ExportTriggersWindow{
+				if(_instance){
+					_instance.activate();
+				}else{
+					_instance = new ExportTriggersWindow();
+					_instance.open();
+				}
+				return _instance;
+			}
+			
+			protected function closeHandler(event:Event):void{
+				_instance = null;
+			}
+			
+			protected function closeButton_clickHandler(event:MouseEvent):void{
+				this.close();
+				/*NOTE why i needed this?
+				var l:Loader = new Loader();
+				l.contentLoaderInfo.bytes
+				*/
+			}
+			private function createSQL():void{
+				
+			}
+			protected function refreshButton_clickHandler(event:MouseEvent):void{
+				createSQL();
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				createSQL();
+				var export:SQLiteExport = new SQLiteExport();
+				var sql:String = export.create(SQLResources.instance.triggers);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5" />
+	</s:layout>
+	<s:Spacer height="100%"/>
+	<s:HGroup width="100%" horizontalAlign="right">
+		<s:Button label="Refresh" toolTip="Refresh SQL for triggers" click="refreshButton_clickHandler(event)"/>
+		<s:Button label="Save" toolTip="Save SQLite triggers to file"/>
+		<s:Spacer width="15"/>
+		<s:Button label="Cancel" click="closeButton_clickHandler(event)"/>
+	</s:HGroup>
+</s:Window>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false" width="100%" dataChange="dataChangeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import aw.data.TableColumnInfo;
+			import mx.events.FlexEvent;
+			
+			protected function dataChangeHandler(event:FlexEvent):void{
+				var column:SQLColumnSchema = this.data as SQLColumnSchema;
+				if(column){
+					this.label = TableColumnInfo.toString(column);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Label text="{label}" left="0" top="0" right="0" maxDisplayedLines="1"/>
+</s:ItemRenderer>

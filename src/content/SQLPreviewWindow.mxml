@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="300" title="SQL Preview{this.schema.name ? ' for &quot;'+this.schema.name+'&quot;' : ''}" showStatusBar="false" backgroundColor="#333333" close="closeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			
+			static private const _instances:Dictionary = new Dictionary(true);
+			
+			[Bindable]
+			private var _sql:String;
+			private var _schema:SQLSchema;
+			[Bindable]
+			public function get schema():SQLSchema{
+				return _schema;
+			}
+			public function set schema(value:SQLSchema):void{
+				delete _instances[this._schema];
+				this._schema = value;
+				this._sql = schema.sql.replace(/[\r\n]{2,}/ig, "\n").replace(/\t/ig, "  ");
+				_instances[this._schema] = this;
+			}
+
+			static public function display(schema:SQLSchema):SQLPreviewWindow{
+				var window:SQLPreviewWindow;
+				if(schema in _instances){
+					window = _instances[schema];
+					window.activate();
+				}else{
+					window = new SQLPreviewWindow();
+					window.schema = schema;
+					window.open();
+				}
+				return window;
+			}
+			
+			protected function copyButton_clickHandler(event:MouseEvent):void{
+				System.setClipboard(this._sql);
+			}
+			
+			protected function closeButton_clickHandler(event:MouseEvent):void{
+				this.close();
+			}
+			
+			protected function closeHandler(event:Event):void{
+				delete _instances[this.schema];
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5" />
+	</s:layout>
+	<s:TextArea text="{_sql}" width="100%" height="100%" editable="false" horizontalScrollPolicy="auto"/>
+	<s:HGroup width="100%" horizontalAlign="right">
+		<s:Button label="Copy to Clipboard" click="copyButton_clickHandler(event)"/>
+		<s:Button label="Close" click="closeButton_clickHandler(event)"/>
+	</s:HGroup>
+</s:Window>

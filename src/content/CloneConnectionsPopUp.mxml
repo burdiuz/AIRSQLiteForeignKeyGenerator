@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="100" title="Cloning Database Connections" initialize="initializeHandler(event)" creationComplete="creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import aw.data.DatabaseInfo;
+			import aw.data.DateUtil;
+			import aw.data.SQLConnectionConfiguration;
+			import aw.data.SQLResources;
+			import aw.file.FileUtils;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			static private var _instance:CloneConnectionsPopUp;
+			private var _file:File;
+			private var _parentFolder:File;
+			private var _dbFolder:File;
+			private var _connectionsName:String;
+			[Bindable]
+			public var resources:SQLResources = SQLResources.instance;
+			[Bindable]
+			public var temporary:Boolean;
+			
+			private var _sourceDatabases:Array;
+			private var _mainDBFile:File;
+			private var _destinationFiles:Object = {};
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				if(!this.resources.databases || !this.resources.databases.length){
+					Alert.show("Connections cloning allowed only if there are at least one Database connected.", "Warning");
+					this.close();
+				}
+			}
+			protected function creationCompleteHandler(event:FlexEvent):void{
+				if(this.stage){
+					this.stage.addEventListener(Event.RESIZE, this.resizeHandler);
+				}
+				this.resizeHandler(null);
+				if(this.temporary){
+					this._file = File.createTempFile();
+					this._dbFolder = File.createTempDirectory();
+					this.copy();
+				}else{
+					const main:DatabaseInfo = this.resources.databases.getItemAt(0) as DatabaseInfo;
+					this._file = File.documentsDirectory.resolvePath(main.file.name+"_connections_copy_"+DateUtil.format()+"."+SQLConnectionConfiguration.FILE_EXTENSION);
+					this._file.addEventListener(Event.SELECT, this.fileSelectHandler);
+					this._file.addEventListener(Event.CANCEL, this.fileCancelHandler);
+					this._file.browseForSave("Select destination file for cloned databases and connections.");
+				}
+			}
+			private function resizeHandler(event:Event):void{
+				PopUpManager.centerPopUp(this);
+			}
+			
+			protected function removedFromStageHandler(event:Event):void{
+				if(this.stage){
+					this.stage.removeEventListener(Event.RESIZE, this.resizeHandler);
+				}
+			}
+			protected function fileSelectHandler(event:Event):void{
+				this._file = FileUtils.fixExtension(this._file, SQLConnectionConfiguration.FILE_EXTENSION);
+				this._connectionsName = this._file.name.substr(0, this._file.name.length-this._file.extension.length-1);
+				const parent:File = this._parentFolder = this._file.parent;
+				this._dbFolder = parent.resolvePath(this._connectionsName+".databases");
+				if(this._file.exists || this._dbFolder.exists){
+					var index:int = 0;
+					do{
+						var name:String = this._connectionsName+"."+index;
+						this._file = parent.resolvePath(name+"."+SQLConnectionConfiguration.FILE_EXTENSION);
+						this._dbFolder = parent.resolvePath(name+".databases");
+					}while(this._file.exists || this._dbFolder.exists);
+					this._connectionsName = name;
+					Alert.show("Connections name already in use. Connections will be cloned to \""+this._file.name+"\".", "Warning", Alert.OK | Alert.CANCEL, null, this.nameAlertCloseHandler);
+				}else{
+					this.copy();
+				}
+			}
+			private function nameAlertCloseHandler(event:CloseEvent):void{
+				if(event.detail==Alert.OK){
+					this.copy();
+				}else{
+					this.close();
+				}
+			}
+			static public const ROLLBACK_FILE_COPY_ERROR:int = 1;
+			static public const ROLLBACK_CONNECT_NEW_ERROR:int = 2;
+			private function copy():void{
+				try{
+					this._dbFolder.createDirectory();
+					const dbs:Array = this._sourceDatabases = this.resources.databases.source.slice();
+					this.resources.clear();
+					const copied:Object = {};
+					for each(var db:DatabaseInfo in dbs){
+						var source:File = db.file;
+						var dbFile:File = this._dbFolder.resolvePath(source.name);
+						if(!(source.nativePath in copied) || !dbFile.exists){
+							source.copyTo(dbFile, true);
+							copied[source.nativePath] = source;
+						}
+						if(db.main) this._mainDBFile = dbFile;
+						else this._destinationFiles[db.name] = dbFile;
+					}
+				}catch(error:Error){
+					this.rollback(ROLLBACK_FILE_COPY_ERROR);
+					return;
+				}
+				try{
+					this.resources.load(this._mainDBFile);
+					for(var name:String in this._destinationFiles){
+						this.resources.attach(name, this._destinationFiles[name]);
+					}
+				}catch(error:Error){
+					this.rollback(ROLLBACK_CONNECT_NEW_ERROR);
+					return;
+				}
+				SQLConnectionConfiguration.save(this._file, this.resources.databases.source);
+				Alert.show("Databases cloned to \""+this._dbFolder.nativePath+"\" and Connections file \""+this._file.nativePath+"\" created.");
+				this.close();
+			}
+			private function rollback(type:int=0):void{
+				var db:DatabaseInfo;
+				try{
+					this.resources.clear();
+					if(this._dbFolder && this._dbFolder.exists){
+						this._dbFolder.deleteDirectory(true);
+					}
+					if(this._file && this._file.exists){
+						this._file.deleteFile();
+					}
+				}catch(error:Error){
+					Alert.show("Unsuccessful rollback because of I/O error, verify if you have adequate permissions.", "Error reading file");
+				}
+				try{
+					for each(db in this._sourceDatabases){
+						if(db.main) {
+							this.resources.load(db.file);
+							break;
+						}
+					}
+					for each(db in this._sourceDatabases){
+						if(!db.main) this.resources.attach(db.name, db.file);
+					}
+				}catch(error:Error){
+					Alert.show("Unsuccessful rollback because of Database Connection error.", "Error");
+				}
+				var message:String = "";
+				switch(type){
+					case ROLLBACK_FILE_COPY_ERROR:
+						message = "Cloning resulted into file copy error, rolling back changes. Can't copy file, verify if you have adequate permissions to open it.";
+						break;
+					case ROLLBACK_CONNECT_NEW_ERROR:
+						message = "Cloning resulted into database connection error, rolling back changes. Copied database files was not connected to application due to error.";
+						break;
+					default:
+						message = "Cloning resulted into unexpected error, rolling back changes.";
+						break;
+				}
+				Alert.show(message, "Error");
+				this.close();
+			}
+			protected function fileCancelHandler(event:Event):void{
+				this.close();
+			}
+			static public function display(temporary:Boolean=false):CloneConnectionsPopUp{
+				if(!_instance){
+					const panel:CloneConnectionsPopUp = new CloneConnectionsPopUp();
+					PopUpManager.addPopUp(panel, SQLiteForeignKeyGenerator.instance, true);
+					panel.temporary = temporary;
+					_instance = panel;
+				}
+				return panel;
+			}
+			public function close():void{
+				_instance = null;
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5"/>
+	</s:layout>
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="copying"/>
+	</s:states>
+	<s:VGroup width="100%" height="100%" verticalAlign="middle" horizontalAlign="center" includeIn="loading">
+		<s:Label text="Waiting for files being copied..."/>
+	</s:VGroup>
+</s:Panel>

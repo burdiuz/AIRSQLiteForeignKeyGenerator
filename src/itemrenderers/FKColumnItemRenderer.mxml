@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" clipAndEnableScrolling="true" dataChange="dataChangeHandler(event)" xmlns:itemrenderers="itemrenderers.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import aw.data.ForeignKeyInfo;
+			import aw.data.GridColumnExtension;
+			import aw.data.SQLResources;
+			
+			import com.kingnare.skin.spark.Button.Button;
+			
+			import content.ColumnsSelectPopUp;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayList;
+			import mx.collections.IList;
+			import mx.events.FlexEvent;
+			import mx.events.PropertyChangeEvent;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			private var _column:GridColumnExtension;
+			private var _dataField:String;
+			private var _listField:String;
+			private var _listType:Class;
+			[Bindable]
+			public var resources:SQLResources = SQLResources.instance;
+			
+			override public function set column(value:GridColumn):void{
+				this._column = value as GridColumnExtension;
+				this._dataField = this._column.dataField;
+				this._listField = this._column.listField;
+				this._listType = this._column.listType;
+				if(this._column.referenceTableField){
+					BindingUtils.bindSetter(this.validateState, this, ["data", this._column.referenceTableField]);
+				}
+				if(this._column.referenceDatabaseField){
+					BindingUtils.bindSetter(this.validateState, this, ["data", this._column.referenceDatabaseField]);
+				}
+				this.validateState();
+				super.column = value;
+			}
+			override public function prepare(hasBeenRecycled:Boolean):void {
+				this.dataChangeHandler(null);
+				this.validateState();
+			}
+			
+			protected function dataChangeHandler(event:FlexEvent):void{
+				var value:* = this.data;
+				if(this.input){
+					this.input.text = value ? value[this._dataField] : "";
+				}
+			}
+			private var _tableSchema:SQLTableSchema;
+			protected function validateState(anything:*=null):void{
+				var data:* = this.data;
+				const dbref:String = this._column.referenceDatabaseField;
+				const tblref:String = this._column.referenceTableField;
+				if(!data || !dbref || !tblref){
+					this.currentState = "notbl";
+					return;
+				}
+				this._tableSchema = ForeignKeyInfo.getTableSchema(data[tblref], data[dbref] ? data[dbref] : "main", resources);
+				this.currentState = this._tableSchema ? "tbl" : "notbl";
+			}
+			override public function set currentState(value:String):void{
+				if(super.currentState != value){
+					super.currentState = value;
+				}
+			}
+			protected function input_creationCompleteHandler(event:FlexEvent):void{
+				BindingUtils.bindProperty(this.input, "text", this, ["data", this._dataField]);
+				this.dataChangeHandler(null);
+			}
+			
+			protected function input_focusInHandler(event:FocusEvent):void{
+				this.input.addEventListener(TextOperationEvent.CHANGE, this.input_changeHandler);
+			}
+			
+			protected function input_focusOutHandler(event:FocusEvent):void{
+				this.input.removeEventListener(TextOperationEvent.CHANGE, this.input_changeHandler);
+			}
+			
+			protected function input_changeHandler(event:TextOperationEvent):void{
+				var data:ForeignKeyInfo = this.data as ForeignKeyInfo;
+				if(data){
+					//data[this._dataField] = this.input.text;
+					data.setSilent(this._dataField, this.input.text);
+				}
+			}
+			
+			protected function selectButton_clickHandler(event:MouseEvent):void{
+				ColumnsSelectPopUp.display(this.data as ForeignKeyInfo, this._tableSchema, this._dataField);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="notbl" />
+		<s:State name="tbl" />
+	</s:states>
+	<s:TextInput id="input" left="0" top="1" right="0" right.tbl="22" focusIn="input_focusInHandler(event)" focusOut="input_focusOutHandler(event)" creationComplete="input_creationCompleteHandler(event)" />
+	<s:Button label="..." top="1" right="0" includeIn="tbl" click="selectButton_clickHandler(event);"/>
+</s:GridItemRenderer>

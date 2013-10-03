@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false" width="100%" dataChange="dataChangeHandler(event)" preinitialize="preinitializeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import content.SQLPreviewWindow;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayList;
+			import mx.events.FlexEvent;
+			[Bindable]
+			public var settings:Settings = Settings.instance;
+			[Bindable]
+			public var schema:SQLTableSchema;
+			[Bindable]
+			public var columns:ArrayList;
+			
+			protected function showButton_clickHandler(event:MouseEvent):void{
+				SQLPreviewWindow.display(this.schema);
+			}
+			
+			protected function expandButton_clickHandler(event:MouseEvent):void{
+				this.currentState = this.currentState=="collapsed" ? "expanded" : "collapsed";
+			}
+			
+			protected function dataChangeHandler(event:FlexEvent):void{
+				this.schema = data as SQLTableSchema;
+				this.sortingChangedHandler();
+			}
+			
+			protected function preinitializeHandler(event:FlexEvent):void{
+				BindingUtils.bindSetter(this.sortingChangedHandler, this, ["settings", "sortTableColumns"]);
+			}
+			private function sortingChangedHandler(...args):void{
+				if(this.schema){
+					var list:Array = this.schema.columns.slice();
+					if(settings.sortTableColumns){
+						list.sortOn("name", Array.CASEINSENSITIVE);
+					}
+					this.columns = new ArrayList(list);
+				}else{
+					this.columns = null;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="collapsed"/>
+		<s:State name="expanded"/>
+	</s:states>
+	<s:layout>
+		<s:VerticalLayout />
+	</s:layout>
+	<s:HGroup width="100%" verticalAlign="middle">
+		<s:Image source.collapsed="@Embed('../icons/expand.png')" source.expanded="@Embed('../icons/collapse.png')" buttonMode="true" useHandCursor="true" click="expandButton_clickHandler(event)" toolTip.collapsed="Show Table collumns" toolTip.expanded="Hide Table collumns" />
+		<s:Label text="{settings.tablesShowDBName ? schema.database+'.'+schema.name : schema.name}" width="100%" maxDisplayedLines="1" />
+		<s:Image source="../icons/text.png" buttonMode="true" useHandCursor="true" click="showButton_clickHandler(event)" toolTip="Display SQL code"/>
+	</s:HGroup>
+	<s:DataGroup id="columnsContainer" dataProvider="{columns}" width="100%" includeIn="expanded" itemRenderer="itemrenderers.ColumnItemRenderer">
+		<s:layout>
+			<s:VerticalLayout paddingLeft="25" paddingBottom="15"/>
+		</s:layout>
+	</s:DataGroup>
+</s:ItemRenderer>
