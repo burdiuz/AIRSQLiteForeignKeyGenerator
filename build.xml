@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<project default="Build" name="Build keeping AS3 code, then edit this code">
+<project default="PrepareGeneratedFiles" name="Build keeping AS3 code, then edit this code">
 	<description><![CDATA[
 		ANT build configuration that removes all debug lines from release build. 
 		It should copy modified sources to new location and after compilation 
@@ -16,10 +16,34 @@
 	<property name="sourceDir" value="${basedir}/src"/>
 	<property name="phpExecutable" value="php"/>
 	<property name="generated" value="${basedir}/generated"/>
+	<property name="generated_temp" value="${basedir}/generated_safeplace_"/>
 	<property name="assets" value="${basedir}/assets"/>
 	<property name="tempMXMLTaskFileName" value="temporary.ExecuteMXML.task.xml"/>
-	
-	<target name="Build">
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+        <classpath>
+            <pathelement location="${basedir}/ant-contrib.jar"/>
+        </classpath>
+    </taskdef>
+	<target name="StartSavingFiles">
+		<forget>
+			<exec executable="${phpExecutable}">
+				<arg value="${basedir}/save_generated.php"/>
+				<arg value="-source"/>
+				<arg value="${generated}"/>
+				<arg value="-destination"/>
+				<arg value="${generated_temp}"/>
+			</exec>
+		</forget>
+	</target>
+	<target name="HandleSavedFiles">
+		<sleep seconds="1"/>
+		<delete file="${basedir}/save_generated.lock"/>
+		<move todir="${generated}">
+			<fileset dir="${generated_temp}"/>
+		</move>
+		<delete file="${generated_temp}"/>
+	</target>
+	<target name="GenerateAS" depends="StartSavingFiles">
 		<taskdef resource="flexTasks.tasks" classpath="${FLEXSDK_HOME}/ant/lib/flexTasks.jar" />
 		<local name="FLEX_HOME"/>
 		<property name="FLEX_HOME" value="${FLEXSDK_HOME}"/>
@@ -49,13 +73,13 @@
 		<!-- Delete compiled SWF-file -->
 		<delete file="${basedir}/${application}.swf"/>
 	</target>
-	<target name="PrepareGeneratedFiles" depends="Build">
+	<target name="PrepareGeneratedFiles" depends="GenerateAS, HandleSavedFiles">
 		<move todir="${generated}" includeemptydirs="false">
 			<fileset dir="${generated}"/>
 			<mapper type="regexp" from="(.+)\-generated\.as" to="\1.as"/>
 		</move>
 		<delete>
-			<fileset dir="${generated}" includes="**/*-binding.as, **/*-interface.as, **/_class_embed_*.as"/>
+			<fileset dir="${generated}" includes="**/*-interface.as, **/_class_embed_*.as"/>
 		</delete>
 		<copy todir="${generated}" overwrite="false">
 			<fileset dir="${sourceDir}">
@@ -100,11 +124,6 @@
 		</apply>
 	</target>
 	<target name="GenerateMXMLCTask" depends="FindImproperEmbeds, RenameLocalizedFiles">
-	    <taskdef resource="net/sf/antcontrib/antlib.xml">
-	        <classpath>
-	            <pathelement location="${basedir}/ant-contrib.jar"/>
-	        </classpath>
-	    </taskdef>
 	    <macrodef name="get_all_includes">
 	        <attribute name="output" />
 	        <attribute name="dir" />
