@@ -1,0 +1,238 @@
+<?xml version="1.0"?>
+<project default="Build" name="Build keeping AS3 code, then edit this code">
+	<description><![CDATA[
+		ANT build configuration that removes all debug lines from release build. 
+		It should copy modified sources to new location and after compilation 
+		remove them.
+	]]></description>
+	<echo>Ant version: ${ant.version}</echo>
+	<property file="build.properties"/>
+	<property name="FLEX_HOME" value="z:/sdks/air/3.7"/>
+	<property name="FLEXSDK_HOME" value="z:/sdks/flex/4.6"/>
+	<property name="debug" value="true"/>
+	<property name="locale" value="en_US"/>
+	<property name="swfVersion" value="20"/>
+	<property name="targetPlayer" value="11.7"/>
+	<property name="sourceDir" value="${basedir}/src"/>
+	<property name="phpExecutable" value="php"/>
+	<property name="generated" value="${basedir}/generated"/>
+	<property name="assets" value="${basedir}/assets"/>
+	<property name="tempMXMLTaskFileName" value="temporary.ExecuteMXML.task.xml"/>
+	
+	<target name="Build">
+		<taskdef resource="flexTasks.tasks" classpath="${FLEXSDK_HOME}/ant/lib/flexTasks.jar" />
+		<local name="FLEX_HOME"/>
+		<property name="FLEX_HOME" value="${FLEXSDK_HOME}"/>
+		<echo>Flex SDK: ${FLEXSDK_HOME}</echo>
+		 <mxmlc 
+            file="${sourceDir}/${application}.mxml" 
+            output="${basedir}/${application}.swf" 
+            actionscript-file-encoding="UTF-8" 
+			static-link-runtime-shared-libraries="true" 
+		 	keep-generated-actionscript="true" 
+            configname="air" 
+            debug="${debug}" 
+            failonerror="true" 
+            fork="true" 
+            locale="${locale}" 
+            maxmemory="512m" 
+			swf-version="${swfVersion}" 
+			target-player="${targetPlayer}" 
+			accessible="true" 
+			allow-source-path-overlap="false" >
+			<load-config filename="${FLEXSDK_HOME}/frameworks/air-config.xml"/>
+            <source-path path-element="${sourceDir}"/> 
+			<compiler.library-path dir="${basedir}/" append="true">
+				<include name="libs" />
+			</compiler.library-path>
+        </mxmlc>
+		<!-- Delete compiled SWF-file -->
+		<delete file="${basedir}/${application}.swf"/>
+	</target>
+	<target name="PrepareGeneratedFiles" depends="Build">
+		<move todir="${generated}" includeemptydirs="false">
+			<fileset dir="${generated}"/>
+			<mapper type="regexp" from="(.+)\-generated\.as" to="\1.as"/>
+		</move>
+		<delete>
+			<fileset dir="${generated}" includes="**/*-binding.as, **/*-interface.as, **/_class_embed_*.as"/>
+		</delete>
+		<copy todir="${generated}" overwrite="false">
+			<fileset dir="${sourceDir}">
+				<include name="**/*.as"/>
+			</fileset>
+		</copy>
+	</target>
+	<target name="ApplyBindings">
+		<apply executable="${phpExecutable}" dir="${generated}" parallel="false" relative="true">
+			<arg value="${basedir}/bindings_applier.php"/>
+			<arg value="-file"/>
+			<fileset dir="${generated}">
+				<include name="**/*-binding.as"/>
+			</fileset>
+		</apply>
+		<delete>
+			<fileset dir="${generated}" includes="**/*-binding.as"/>
+		</delete>
+	</target>
+	<target name="FindImproperEmbeds" depends="PrepareGeneratedFiles">
+		<apply executable="${phpExecutable}" dir="${generated}" parallel="false" relative="true">
+			<arg value="${basedir}/embeds_replacement.php"/>
+			<arg value="-assetsDir"/>
+			<arg value="${assets}"/>
+			<arg value="-sourceDir"/>
+			<arg value="${sourceDir}"/>
+			<arg value="-file"/>
+			<fileset dir="${generated}">
+				<include name="**/*.as"/>
+				<contains text="[Embed(" casesensitive="yes"/>
+			</fileset>
+		</apply>
+	</target>
+	<target name="RenameLocalizedFiles" depends="PrepareGeneratedFiles">
+		<apply executable="${phpExecutable}" dir="${generated}" parallel="false" relative="true">
+			<arg value="${basedir}/locale_comparison.php"/>
+			<arg value="-file"/>
+			<fileset dir="${generated}">
+				<include name="**/${locale}$*.as"/>
+				<include name="**/*_properties.as"/>
+			</fileset>
+		</apply>
+	</target>
+	<target name="GenerateMXMLCTask" depends="FindImproperEmbeds, RenameLocalizedFiles">
+	    <taskdef resource="net/sf/antcontrib/antlib.xml">
+	        <classpath>
+	            <pathelement location="${basedir}/ant-contrib.jar"/>
+	        </classpath>
+	    </taskdef>
+	    <macrodef name="get_all_includes">
+	        <attribute name="output" />
+	        <attribute name="dir" />
+	    	<attribute name="tempFile" default="ant.get_all_includes.list.txt"/>
+	        <sequential>
+	        	<!-- cleaning file it its exists already -->
+	            <echo message="" file="@{tempFile}" />
+	    		<for param="file">
+	    			<path>
+	    				<fileset dir="@{dir}">
+	    					<include name="**/_*.as"/>
+	    					<include name="**/${locale}$*.as"/>
+	    					<include name="**/*_properties.as"/>
+	    				</fileset>
+	    			</path>
+	    			<sequential>
+	    				<propertyregex property="symbol" override="true" input="@{file}" regexp="([^\\\/]+)\.as$" select="\1" />
+	    	            <echo message=" ${symbol}" file="@{tempFile}" append="true" />
+	    			</sequential>
+	    		</for>
+	            <loadfile property="@{output}" srcFile="@{tempFile}"/>
+	        	<delete file="@{tempFile}" />
+	        </sequential>
+	    </macrodef>
+		<echoxml file="${basedir}/${tempMXMLTaskFileName}">
+			<project default="ExecuteMXMLC" name="Build keeping AS3 code, then edit this code">
+				<taskdef resource="flexTasks.tasks" classpath="${FLEX_HOME}/ant/lib/flexTasks.jar" />
+				<target name="ExecuteMXMLC">
+					<mxmlc
+					 	file="${generated}/_${application}_mx_managers_SystemManager.as" 
+						output="${basedir}/${application}.swf" 
+						actionscript-file-encoding="UTF-8" 
+						static-link-runtime-shared-libraries="true" 
+						configname="air" 
+						debug="${debug}" 
+						failonerror="true" 
+						fork="true" 
+						locale="${locale}" 
+						maxmemory="512m" 
+						swf-version="${swfVersion}" 
+						target-player="${targetPlayer}" 
+						accessible="true" 
+						allow-source-path-overlap="false">
+						<load-config filename="${FLEX_HOME}/frameworks/air-config.xml"/> 
+						<frame label="${application}" classname="${application}" /> 
+						<includes symbol="mx.managers.systemClasses.ActiveWindowManager" />
+						{includes}
+						<source-path path-element="${generated}"/> 
+						<compiler.library-path dir="${FLEXSDK_HOME}/frameworks" append="true">
+							<include name="libs" />
+							<include name="libs/mx" />
+							<include name="locale/${locale}" />
+							<include name="libs/air/airframework.swc" />
+							<include name="libs/air/airspark.swc" />
+						</compiler.library-path>
+					</mxmlc>
+				</target>
+			</project>
+		</echoxml>
+		<get_all_includes output="includes" dir="${generated}"/>
+		<echo message="MXMLC Includes: ${includes}"/>
+		<exec executable="${phpExecutable}">
+			<arg value="${basedir}/append_includes.php"/>
+			<arg value="-file"/>
+			<arg value="${basedir}/temporary.ExecuteMXML.task.xml"/>
+			<arg value="-includes"/>
+			<arg value="${includes}"/>
+		</exec>
+	</target>
+	<target name="CompileGenerated" depends="GenerateMXMLCTask">
+		<ant antfile="${basedir}/${tempMXMLTaskFileName}" dir="${basedir}" />
+		<delete file="${basedir}/${tempMXMLTaskFileName}"/>
+	</target>
+	<target name="CleanGenerated">
+		<delete dir="${generated}" />
+		<delete dir="${assets}" />
+	</target>
+	<target name="CreateAIRAppXML">
+		<delete file="${basedir}/${application}-app.xml"/>
+		<xslt in="${sourceDir}/${application}-app.xml" out="${basedir}/${application}-app.xml">
+			<param name="fileName" expression="${application}.swf"/>
+			<param name="airNamespace" expression="http://ns.adobe.com/air/application/3.7"/>
+			<style>
+                <string>
+                    <![CDATA[
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+	<xsl:output omit-xml-declaration="yes" indent="yes"/>
+	<xsl:strip-space elements="*"/>
+	<xsl:param name="fileName"/>
+	<xsl:param name="airNamespace"/>
+	<xsl:template match="node()|@*">
+		<xsl:copy>
+			<xsl:apply-templates select="node()|@*"/>
+		</xsl:copy>
+	</xsl:template>
+	<xsl:template match="*[true()]">
+		<xsl:element name="{local-name()}" namespace="{$airNamespace}">
+			<xsl:apply-templates select="node()|@*"/>
+		</xsl:element>
+	</xsl:template>
+	<xsl:template match="comment()"/>
+	<xsl:template match="/application/initialWindow/content/text()">
+		<xsl:value-of select="$fileName"/>
+	</xsl:template>
+</xsl:stylesheet>
+                    ]]>
+                </string>
+			</style>
+		</xslt>
+	</target>
+	<target name="MakePackage" depends="CompileGenerated, CleanGenerated, CreateAIRAppXML">
+		<echo message="Creating bundle for ${application} AIR application...." />
+		<java jar="${FLEX_HOME}/lib/adt.jar" fork="true"
+			failonerror="true"
+			maxmemory="512m">
+			<arg value="-package"/>
+			<arg value="-storetype"/>
+			<arg value="pkcs12"/>
+			<arg value="-keystore"/>
+			<arg value="${certificate}"/>
+			<arg value="-storepass"/>
+			<arg value="${certpwd}"/>
+			<arg value="${application}.air"/>
+			<arg value="${basedir}/${application}-app.xml"/>
+			<arg value="-C"/>
+			<arg value="${basedir}"/>
+			<arg value="${basedir}/${application}.swf"/>
+		</java>
+		<delete file="${basedir}/${application}.swf" />
+	</target>
+</project>

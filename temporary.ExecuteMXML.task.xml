@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="ExecuteMXMLC" name="Build keeping AS3 code, then edit this code">
+  <taskdef classpath="z:/sdks/air/3.7/ant/lib/flexTasks.jar" resource="flexTasks.tasks" />
+  <target name="ExecuteMXMLC">
+    <mxmlc accessible="true" actionscript-file-encoding="UTF-8" allow-source-path-overlap="false" configname="air" debug="true" failonerror="true" file="z:\home\localhost\www\AIRSQLiteForeignKeyGenerator/generated/_SQLiteForeignKeyGenerator_mx_managers_SystemManager.as" fork="true" locale="en_US" maxmemory="512m" output="z:\home\localhost\www\AIRSQLiteForeignKeyGenerator/SQLiteForeignKeyGenerator.swf" static-link-runtime-shared-libraries="true" swf-version="20" target-player="11.7"><includes symbol="_SQLiteForeignKeyGeneratorWatcherSetupUtil"/>
+<includes symbol="_SQLiteForeignKeyGenerator_FlexInit"/>
+<includes symbol="_SQLiteForeignKeyGenerator_Styles"/>
+<includes symbol="_SQLiteForeignKeyGenerator_mx_managers_SystemManager"/>
+<includes symbol="_com_kingnare_skin_mx_Panel_PanelBorderSkinWatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_DataGrid_SDataGridWatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_HSlider_HSliderInnerClass0WatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_PanelSkin_PanelWatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_TabBar_TabBarButtonSkinWatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_TitleWindow_TitleWindowWatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_VSlider_VSliderInnerClass0WatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_VideoPlayer_VideoPlayerWatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_VideoPlayer_fullScreen_ScrubBarSkinInnerClass0WatcherSetupUtil"/>
+<includes symbol="_com_kingnare_skin_spark_VideoPlayer_normal_ScrubBarSkinInnerClass0WatcherSetupUtil"/>
+<includes symbol="_content_ColumnsSelectPopUpWatcherSetupUtil"/>
+<includes symbol="_content_DBEntitiesContentWatcherSetupUtil"/>
+<includes symbol="_content_EncryptionKeyViewWatcherSetupUtil"/>
+<includes symbol="_content_LoadDBResolvePathsPopUpWatcherSetupUtil"/>
+<includes symbol="_content_OpenDatabasePopUpWatcherSetupUtil"/>
+<includes symbol="_content_SQLExecuteWindowWatcherSetupUtil"/>
+<includes symbol="_content_SQLPreviewWindowWatcherSetupUtil"/>
+<includes symbol="_content_SettingsWindowWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_ColumnItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_DatabaseDeleteItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_DatabaseItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_DatabaseNameItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_FKActionItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_FKDatabaseItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_FKTableItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_TableColumnSelectItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_TableItemRendererWatcherSetupUtil"/>
+<includes symbol="_itemrenderers_TriggerItemRendererWatcherSetupUtil"/>
+<includes symbol="en_US$SharedResources_properties"/>
+<includes symbol="en_US$collections_properties"/>
+<includes symbol="en_US$components_properties"/>
+<includes symbol="en_US$containers_properties"/>
+<includes symbol="en_US$controls_properties"/>
+<includes symbol="en_US$core_properties"/>
+<includes symbol="en_US$effects_properties"/>
+<includes symbol="en_US$formatters_properties"/>
+<includes symbol="en_US$layout_properties"/>
+<includes symbol="en_US$osmf_properties"/>
+<includes symbol="en_US$skins_properties"/>
+<includes symbol="en_US$sparkEffects_properties"/>
+<includes symbol="en_US$styles_properties"/>
+<includes symbol="en_US$textLayout_properties"/>
+<includes symbol="en_US$utils_properties"/>      <load-config filename="z:/sdks/air/3.7/frameworks/air-config.xml" />
+      <frame classname="SQLiteForeignKeyGenerator" label="SQLiteForeignKeyGenerator" />
+      <includes symbol="mx.managers.systemClasses.ActiveWindowManager" />
+      <source-path path-element="z:\home\localhost\www\AIRSQLiteForeignKeyGenerator/generated" />
+      <compiler.library-path append="true" dir="z:/sdks/flex/4.6/frameworks">
+        <include name="libs" />
+        <include name="libs/mx" />
+        <include name="locale/en_US" />
+        <include name="libs/air/airframework.swc" />
+        <include name="libs/air/airspark.swc" />
+      </compiler.library-path>
+    </mxmlc>
+  </target>
+</project>

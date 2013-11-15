@@ -33,6 +33,9 @@
 			import mx.binding.utils.BindingUtils;
 			import mx.events.FlexEvent;
 			
+			import vos1.TestBindableFieldsVO;
+			import vos1.TestBindablePropertiesVO;
+			
 			[Embed(source="icons/database.png")]
 			static public const DATABASE_ICON:Class;
 			[Embed(source="icons/table.png")]
@@ -41,6 +44,7 @@
 			static public const TRIGGER_ICON:Class;
 			static private var _instance:SQLiteForeignKeyGenerator;
 			private var _openDBCommand:ICommand;
+			
 			static public function get instance():SQLiteForeignKeyGenerator{
 				return _instance;
 			}
@@ -54,6 +58,10 @@
 			public var applyTriggersCommand:ICommandFactory;
 			[Bindable]
 			public var list:ArrayList = new ArrayList([]);
+			
+			public var fields:TestBindableFieldsVO = new TestBindableFieldsVO();
+			public var properties:TestBindablePropertiesVO = new TestBindablePropertiesVO();
+			
 			protected function preinitializeHandler(event:FlexEvent):void{
 				_instance = this;
 				this.buildMenu();

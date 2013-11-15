@@ -6,13 +6,20 @@
 		<![CDATA[
 			import aw.data.DatabaseInfo;
 			import aw.data.SQLResources;
+			
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 			import mx.managers.PopUpManager;
 			
+			import vos2.TestBindableFieldsVO;
+			import vos2.TestBindablePropertiesVO;
+			
 			private var _file:File;
 			private var _lastDatabase:DatabaseInfo;
 			private var _encryptionKey:ByteArray;
+			
+			public var fields:TestBindableFieldsVO = new TestBindableFieldsVO();
+			public var properties:TestBindablePropertiesVO = new TestBindablePropertiesVO();
 			
 			static public function display():AttachDBPopUp{
 				const panel:AttachDBPopUp = new AttachDBPopUp();

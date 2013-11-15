@@ -1,0 +1,135 @@
+Buildfile: z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\build.xml
+     [echo] Ant version: Apache Ant(TM) version 1.9.1 compiled on May 15 2013
+
+Build:
+     [echo] Flex SDK: z:/sdks/flex/4.6
+    [mxmlc] Loading configuration file Z:\sdks\flex\4.6\frameworks\air-config.xml
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\itemrenderers\DatabaseItemRenderer.mxml(41): Warning: Data binding will not be able to detect assignments to "nativePath".
+    [mxmlc] 
+    [mxmlc] 	<s:Label text="{info.name}" width="100%" maxDisplayedLines="1" toolTip="{info.file.nativePath}" />
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\SQLiteForeignKeyGenerator.mxml(187): Warning: int used where a Boolean value was expected.  The expression will be type coerced to Boolean.
+    [mxmlc] 
+    [mxmlc] 				<s:Button label="Export" click="exportTriggers_clickHandler(event)" enabled="{list.length}"/>
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\content\ColumnsSelectPopUp.mxml(192): Warning: String used where a Boolean value was expected.  The expression will be type coerced to Boolean.
+    [mxmlc] 
+    [mxmlc] 		<s:Button label="Add Custom Column" click="addButton_clickHandler(event)" toolTip="Adds custom column name to the list" enabled="{customColumnInput.text}"/>
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(508): Warning: The CSS type selector 'mx.controls.ColorPicker' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|ColorPicker
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(549): Warning: The CSS type selector 'mx.controls.DateChooser' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|DateChooser
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(586): Warning: The CSS type selector 'mx.controls.DateField' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|DateField
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(599): Warning: The CSS type selector 'mx.controls.LinkBar' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|LinkBar
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(610): Warning: The CSS type selector 'mx.controls.LinkButton' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|LinkButton
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(626): Warning: The CSS type selector 'mx.containers.HDividedBox' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|HDividedBox
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(639): Warning: The CSS type selector 'mx.controls.HRule' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|HRule
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(651): Warning: The CSS type selector 'mx.controls.Menu' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|Menu
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(674): Warning: The CSS type selector 'mx.controls.MenuBar' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|MenuBar
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(738): Warning: The CSS type selector 'mx.controls.PopUpButton' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|PopUpButton
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(762): Warning: The CSS type selector 'mx.controls.PopUpMenuButton' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|PopUpMenuButton
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(792): Warning: The CSS type selector 'mx.controls.ProgressBar' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|ProgressBar
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(807): Warning: The CSS type selector 'mx.controls.TabBar' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|TabBar
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(848): Warning: The CSS type selector 'mx.containers.TabNavigator' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|TabNavigator
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(866): Warning: The CSS type selector 'mx.controls.TextInput' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|TextInput
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(878): Warning: The CSS type selector 'mx.controls.ToggleButtonBar' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|ToggleButtonBar 
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(953): Warning: The CSS type selector 'mx.controls.Tree' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|Tree
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(972): Warning: The CSS type selector 'mx.containers.VDividedBox' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|VDividedBox
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(986): Warning: The CSS type selector 'mx.controls.VRule' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|VRule
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(1028): Warning: The CSS type selector 'mx.controls.DataGrid' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|DataGrid
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(1059): Warning: The CSS type selector 'mx.controls.ComboBox' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|ComboBox
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(1095): Warning: The CSS type selector 'mx.controls.OLAPDataGrid' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|OLAPDataGrid
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(1136): Warning: The CSS type selector 'mx.controls.AdvancedDataGrid' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|AdvancedDataGrid
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(1170): Warning: The CSS type selector 'mx.controls.advancedDataGridClasses.AdvancedDataGridSortItemRenderer' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|AdvancedDataGridSortItemRenderer
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(1180): Warning: The CSS type selector 'mx.controls.advancedDataGridClasses.AdvancedDataGridHeaderRenderer' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|AdvancedDataGridHeaderRenderer
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(1191): Warning: The CSS type selector 'mx.controls.FileSystemList' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|FileSystemList
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\src\style.css(1207): Warning: The CSS type selector 'mx.controls.FileSystemDataGrid' was not processed, because the type was not used in the application.
+    [mxmlc] 
+    [mxmlc] mx|FileSystemDataGrid
+    [mxmlc] 
+    [mxmlc] Z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\SQLiteForeignKeyGenerator.swf (2892627 bytes)
+   [delete] Deleting: z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\SQLiteForeignKeyGenerator.swf
+
+PrepareGeneratedFiles:
+     [move] Moving 234 files to z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\generated
+     [copy] Copying 112 files to z:\home\localhost\www\AIRSQLiteForeignKeyGenerator\generated
+
+BUILD SUCCESSFUL
+Total time: 13 seconds
