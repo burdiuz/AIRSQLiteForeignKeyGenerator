@@ -51,7 +51,6 @@ if(!file_exists(DESTINATION)) mkdir(DESTINATION);
  * @var SplFileInfo
  */
 $file = null;
-$index = 0;
 /**
  * @var \DirectoryIterator
  */
@@ -63,12 +62,18 @@ while(file_exists(LOCKFILE)){
 			$filename = $iterator->getBasename();
 			$oldFile = SOURCE.'/'.$filename;
 			if(!file_exists($oldFile)) continue;
+			$genIndex = strpos($filename, '-generated');
+			if($genIndex!==false){
+				$filename = substr($filename, 0, $genIndex).'.'.pathinfo($filename, PATHINFO_EXTENSION);
+			}
 			$newFile = DESTINATION.'/'.$filename;
 			if(file_exists($newFile)){
-				fwrite($log, $filename);
-				$filename = (++$index).'_'.$filename;
-				fwrite($log, ':'.$filename."\n");
-				$newFile = DESTINATION.'/'.$filename;
+				$index = 0;
+				do{
+					$newFile = DESTINATION.'/'.(++$index).'_'.$filename;
+				}while(file_exists($newFile));
+				fwrite($log, $index.'_'.$filename.':'.$index.':'.$filename."\n");
+				$filename = $index.'_'.$filename;
 			}
 			rename($oldFile, $newFile);
 			echo $filename."\n";

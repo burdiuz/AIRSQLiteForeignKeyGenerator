@@ -1,9 +1,7 @@
 <?xml version="1.0"?>
-<project default="PrepareGeneratedFiles" name="Build keeping AS3 code, then edit this code">
+<project default="MakePackage" name="Build keeping AS3 code, then edit this code">
 	<description><![CDATA[
-		ANT build configuration that removes all debug lines from release build. 
-		It should copy modified sources to new location and after compilation 
-		remove them.
+		ANT build configuration that compiles Flex application with ASC2
 	]]></description>
 	<echo>Ant version: ${ant.version}</echo>
 	<property file="build.properties"/>
@@ -87,9 +85,11 @@
 			</fileset>
 		</copy>
 	</target>
-	<target name="ApplyBindings">
+	<target name="ApplyBindings" depends="PrepareGeneratedFiles,RenameLocalizedFiles,FindImproperEmbeds">
 		<apply executable="${phpExecutable}" dir="${generated}" parallel="false" relative="true">
 			<arg value="${basedir}/bindings_applier.php"/>
+			<arg value="-namesfile"/>
+			<arg value="${basedir}/save_generated.log"/>
 			<arg value="-file"/>
 			<fileset dir="${generated}">
 				<include name="**/*-binding.as"/>
@@ -98,6 +98,7 @@
 		<delete>
 			<fileset dir="${generated}" includes="**/*-binding.as"/>
 		</delete>
+		<delete file="${basedir}/save_generated.log"/>
 	</target>
 	<target name="FindImproperEmbeds" depends="PrepareGeneratedFiles">
 		<apply executable="${phpExecutable}" dir="${generated}" parallel="false" relative="true">
@@ -123,13 +124,13 @@
 			</fileset>
 		</apply>
 	</target>
-	<target name="GenerateMXMLCTask" depends="FindImproperEmbeds, RenameLocalizedFiles">
+	<target name="GenerateMXMLCTask" depends="ApplyBindings, FindImproperEmbeds, RenameLocalizedFiles">
 	    <macrodef name="get_all_includes">
 	        <attribute name="output" />
 	        <attribute name="dir" />
 	    	<attribute name="tempFile" default="ant.get_all_includes.list.txt"/>
 	        <sequential>
-	        	<!-- cleaning file it its exists already -->
+	        	<!-- cleaning file if its exists already -->
 	            <echo message="" file="@{tempFile}" />
 	    		<for param="file">
 	    			<path>
